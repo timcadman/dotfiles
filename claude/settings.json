@@ -26,7 +26,6 @@
       "Bash(git show:*)",
       "Bash(git branch:*)",
       "Bash(git add:*)",
-      "Bash(git commit:*)",
       "Bash(git stash:*)",
       "Bash(git fetch:*)",
       "Bash(ls:*)",
@@ -49,6 +48,7 @@
       "Bash(git stash clear:*)"
     ],
     "deny": [
+      "Bash(git commit:*)",
       "Bash(git push:*)",
       "Bash(git push --force:*)",
       "Bash(git reset --hard:*)",
