@@ -102,6 +102,7 @@
       "Read(~/.aws/**)"
     ]
   },
+  "hooks": { "PreToolUse": [ { "matcher": "Bash", "hooks": [ { "type": "command", "command": "jq -r '.tool_input.command // \"\"' | grep -Eq '(^|[^[:alnum:]_])cd |;|&&|\\|\\|' && jq -n '{hookSpecificOutput:{hookEventName:\"PreToolUse\",permissionDecision:\"deny\",permissionDecisionReason:\"Blocked by local hook: avoid cd and command chaining (; && ||). Use a single simple command with an absolute path or git -C.\"}}' || true" } ] } ] },
   "sandbox": {
     "enabled": true,
     "autoAllowBashIfSandboxed": true,
