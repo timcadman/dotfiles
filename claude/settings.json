@@ -28,6 +28,21 @@
       "Bash(git add:*)",
       "Bash(git stash:*)",
       "Bash(git fetch:*)",
+      "Bash(gh pr view:*)",
+      "Bash(gh pr list:*)",
+      "Bash(gh pr diff:*)",
+      "Bash(gh pr checks:*)",
+      "Bash(gh pr status:*)",
+      "Bash(gh issue view:*)",
+      "Bash(gh issue list:*)",
+      "Bash(gh run view:*)",
+      "Bash(gh run list:*)",
+      "Bash(gh repo view:*)",
+      "Bash(gh release view:*)",
+      "Bash(gh release list:*)",
+      "Bash(gh workflow view:*)",
+      "Bash(gh workflow list:*)",
+      "Bash(gh auth status:*)",
       "Bash(ls:*)",
       "Bash(cat:*)",
       "Bash(grep:*)",
@@ -35,8 +50,6 @@
       "Bash(find:*)"
     ],
     "ask": [
-      "Bash(gh pr create:*)",
-      "Bash(gh pr merge:*)",
       "Bash(npm publish:*)",
       "Bash(git merge:*)",
       "Bash(git pull:*)",
@@ -45,9 +58,28 @@
       "Bash(git rebase:*)",
       "Bash(git restore:*)",
       "Bash(git stash drop:*)",
-      "Bash(git stash clear:*)"
+      "Bash(git stash clear:*)",
+      "Bash(gh pr checkout:*)",
+      "Bash(gh pr edit:*)",
+      "Bash(gh pr comment:*)",
+      "Bash(gh pr review:*)",
+      "Bash(gh issue edit:*)",
+      "Bash(gh issue comment:*)",
+      "Bash(gh run rerun:*)",
+      "Bash(gh workflow run:*)"
     ],
     "deny": [
+      "Bash(gh pr create:*)",
+      "Bash(gh pr merge:*)",
+      "Bash(gh pr close:*)",
+      "Bash(gh issue create:*)",
+      "Bash(gh issue close:*)",
+      "Bash(gh release create:*)",
+      "Bash(gh release delete:*)",
+      "Bash(gh repo create:*)",
+      "Bash(gh repo delete:*)",
+      "Bash(gh secret set:*)",
+      "Bash(gh secret delete:*)",
       "Bash(git commit:*)",
       "Bash(git push:*)",
       "Bash(git push --force:*)",
@@ -69,5 +101,31 @@
       "Read(~/.ssh/**)",
       "Read(~/.aws/**)"
     ]
+  },
+  "sandbox": {
+    "enabled": true,
+    "autoAllowBashIfSandboxed": true,
+    "failIfUnavailable": true,
+    "allowUnsandboxedCommands": false,
+    "network": {
+      "allowedDomains": [
+        "cran.r-project.org",
+        "cloud.r-project.org",
+        "*.r-project.org",
+        "github.com",
+        "*.githubusercontent.com",
+        "api.github.com",
+        "cran.obiba.org"
+      ]
+    },
+    "filesystem": {
+      "denyRead": [
+        "~/.ssh",
+        "~/.aws",
+        "~/.config/gcloud",
+        "~/.Renviron",
+        "~/.netrc"
+      ]
+    }
   }
 }
