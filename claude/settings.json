@@ -102,12 +102,12 @@
       "Read(~/.aws/**)"
     ]
   },
-  "hooks": { "PreToolUse": [ { "matcher": "Bash", "hooks": [ { "type": "command", "command": "jq -r '.tool_input.command // \"\"' | grep -Eq '(^|[^[:alnum:]_])cd |;|&&|\\|\\|' && jq -n '{hookSpecificOutput:{hookEventName:\"PreToolUse\",permissionDecision:\"deny\",permissionDecisionReason:\"Blocked by local hook: avoid cd and command chaining (; && ||). Use a single simple command with an absolute path or git -C.\"}}' || true" }, { "type": "command", "command": "jq -r '.tool_input.command // \"\"' | grep -Eq '(^|[^[:alnum:]_])git[[:space:]]+([^[:space:]]+[[:space:]]+)*(commit|push)([[:space:]]|$)' && jq -n '{hookSpecificOutput:{hookEventName:\"PreToolUse\",permissionDecision:\"deny\",permissionDecisionReason:\"Blocked by local hook: git commit/push is prohibited here. Ask the user to run it themselves.\"}}' || true" } ] } ] },
+  "hooks": { "PreToolUse": [ { "matcher": "Bash", "hooks": [ { "type": "command", "command": "jq -r '.tool_input.command // \"\"' | grep -Eq '(^|[^[:alnum:]_])cd |;|&&|\\|\\|' && jq -n '{hookSpecificOutput:{hookEventName:\"PreToolUse\",permissionDecision:\"deny\",permissionDecisionReason:\"Blocked by local hook: avoid cd and command chaining (; && ||). Use a single simple command with an absolute path or git -C.\"}}' || true" }, { "type": "command", "command": "jq -r '.tool_input.command // \"\"' | grep -Eq '(^|[^[:alnum:]_])git[[:space:]]+([^[:space:]]+[[:space:]]+)*(commit|push)([[:space:]]|$)' && jq -n '{hookSpecificOutput:{hookEventName:\"PreToolUse\",permissionDecision:\"deny\",permissionDecisionReason:\"Blocked by local hook: git commit/push is prohibited here. Ask the user to run it themselves.\"}}' || true" }, { "type": "command", "command": "jq -e 'select(.tool_input.dangerouslyDisableSandbox == true) | select(((.tool_input.command // \"\") | test(\"gradlew|start_servers|remote_\")) | not)' >/dev/null 2>&1 && jq -n '{hookSpecificOutput:{hookEventName:\"PreToolUse\",permissionDecision:\"deny\",permissionDecisionReason:\"Unsandboxed Bash is restricted to the Armadillo launch (gradlew/start_servers). Run other commands sandboxed.\"}}' || true" } ] }, { "matcher": "Write|Edit", "hooks": [ { "type": "command", "command": "jq -e 'select(.tool_input.file_path // \"\" | test(\"/[.]claude/(CLAUDE[.]md|settings([.]local)?[.]json)$\"))' >/dev/null 2>&1 && jq -n '{hookSpecificOutput:{hookEventName:\"PreToolUse\",permissionDecision:\"deny\",permissionDecisionReason:\"~/.claude/* are symlinks to the dotfiles repo. Edit the source at ~/dotfiles/claude/ instead (e.g. ~/dotfiles/claude/CLAUDE.md or ~/dotfiles/claude/settings.json).\"}}' || true" } ] } ] },
   "sandbox": {
     "enabled": true,
     "autoAllowBashIfSandboxed": true,
     "failIfUnavailable": true,
-    "allowUnsandboxedCommands": false,
+    "allowUnsandboxedCommands": true,
     "network": {
       "allowedDomains": [
         "cran.r-project.org",
@@ -116,10 +116,34 @@
         "github.com",
         "*.githubusercontent.com",
         "api.github.com",
-        "cran.obiba.org"
+        "cran.obiba.org",
+        "localhost",
+        "127.0.0.1",
+        "registry-1.docker.io",
+        "auth.docker.io",
+        "*.docker.io",
+        "production.cloudflare.docker.com",
+        "repo.maven.apache.org",
+        "repo1.maven.org",
+        "obiba.jfrog.io",
+        "*.jfrog.io",
+        "plugins.gradle.org",
+        "services.gradle.org",
+        "repo.gradle.org",
+        "jitpack.io",
+        "registry.npmjs.org",
+        "registry.molgenis.org",
+        "armadillo-demo.molgenis.net"
+      ],
+      "allowLocalBinding": true,
+      "allowUnixSockets": [
+        "~/.docker/run/docker.sock"
       ]
     },
     "filesystem": {
+      "allowWrite": [
+        "~/.gradle"
+      ],
       "denyRead": [
         "~/.ssh",
         "~/.aws",
@@ -127,6 +151,10 @@
         "~/.Renviron",
         "~/.netrc"
       ]
-    }
+    },
+    "excludedCommands": [
+      "ps",
+      "pgrep"
+    ]
   }
 }
