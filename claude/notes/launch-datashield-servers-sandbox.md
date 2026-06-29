@@ -2,6 +2,10 @@
 
 Reusable note for the `armadillo-opal-comparison` benchmark.
 
+> To reproduce dsBaseClient CI test failures locally (install dsBase, point the
+> harness, run failing tests first), see `run-dsbaseclient-tests-locally.md`.
+> Parameterized launcher (start just one server): `start-datashield.sh`.
+
 ## Paths ($HOME-relative, neutral across laptops)
 - Opal compose: `~/Library/CloudStorage/GoogleDrive-timcadman@gmail.com/Mi unidad/Work/repos/testing/opal-localhost`
 - Armadillo checkout: `~/git-repos/molgenis/molgenis-service-armadillo`
