@@ -11,6 +11,24 @@ Reusable workflow for reproducing CI test failures locally. Companion to
 4. Point the test harness at the backend (`local_settings.csv` + port).
 5. **Run only the FAILING test files first** (fast); run the full suite last (slow).
 
+## Helper scripts (in this folder)
+Two parameterised scripts wrap steps 2 + 4–5 so you don't hand-write scratch R each
+time. First arg is always `opal|armadillo` (matching `start-datashield.sh`).
+
+```bash
+# Install the matching dsBase on a backend (tarball, or github ref for Opal):
+Rscript ~/.claude/notes/datashield/ds-install.R armadillo ~/git-repos/ds-core/dsBaseClient/dsBase_6.3.6.9000.tar.gz
+Rscript ~/.claude/notes/datashield/ds-install.R opal      refactor/perf-batch-3
+
+# Run a test file (writes local_settings.csv in the right form, sets the driver, runs):
+Rscript ~/.claude/notes/datashield/ds-run-tests.R armadillo smk-ds.standardiseDf
+Rscript ~/.claude/notes/datashield/ds-run-tests.R opal      smk-ds.var
+```
+`ds-run-tests.R` auto-detects whether the branch wants a full-URL or bare-host
+`local_settings.csv` and writes accordingly. It does NOT install dsBase or edit
+`login_details.R`. Env overrides: `PKG`, `OPAL_URL`, `ARMA_URL`, `*_USER`/`*_PASS`.
+The sections below are the manual equivalents / background for when the scripts don't fit.
+
 ## 0. Critical: match the dsBase server build to the client BRANCH (not just major version)
 The server runs dsBase; the client (dsBaseClient) calls it. A refactor branch on the
 client usually has a **matching dsBase branch** with new server-side signatures. If the
@@ -118,3 +136,45 @@ devtools::test(pkg = "/Users/timcadman/git-repos/ds-core/dsBaseClient")
 To see the real server-side reason behind a `There are some DataSHIELD errors`
 abort, reproduce the single call and print `DSI::datashield.errors()` — the
 testthat backtrace hides it.
+
+## Gotchas learned from real runs
+
+- **dsBase version is baked into the R-server image, not a compose knob.**
+  `docker-compose_opal.yml` pins `rock: image: datashield/rock_citest-permissive:latest`
+  (Armadillo similarly via its profile/rock image). There is NO compose env var to
+  pick a dsBase version, and `:latest` floats — local servers drift (seen: 6.3.5 →
+  7.0.0.9000 → 6.3.6.9000 on the same Opal). To pin a version, change the rock image
+  tag or — the reliable way — install at runtime (below).
+- **"Matching dsBase" means matching the FEATURE, not just the major version.** A
+  feature branch needs the dsBase that has its server functions. The standardise
+  client (`v6.3.6-dev-feat/standardise-df`) needs `getClassAllColsDS` /
+  `standardiseDfDS` / `getAllLevelsDS`, which live in dsBase `v6.3.6-dev`
+  (`dsBase_6.3.6.9000.tar.gz`) — NOT in `v7.0-dev` or the perf-batch permissive build.
+  Verify before installing: `tar tzf <tar> | grep <fn>` or `git -C dsBase grep -l <fn> <ref>`.
+- **Install a local tarball at runtime:**
+  - Opal: `opalr::dsadmin.install_local_package(opal, "<tar>")` then
+    `dsadmin.profile_init(opal, "default", c("dsBase","resourcer"))` then
+    `dsadmin.set_option(opal, "default.datashield.privacyControlLevel", "permissive")`.
+  - Armadillo: `armadillo.install_packages(paths="<tar>", profile="default")` then
+    `curl -u admin:admin -X POST http://localhost:8081/whitelist/dsBase`.
+- **Data must exist on the backend you target.** Local Armadillo already had
+  `datashield/standardise/*`; local Opal had no `STANDARDISE` project and needed an
+  upload: `opal.table_save(opal, as_tibble(obj, rownames="_row_id_"), "STANDARDISE",
+  table, id.name="_row_id_", force=TRUE)` (auto-creates project with `database="mongodb"`).
+- **`local_settings.csv` semantics differ BY BRANCH — check before setting it.**
+  On `v6.3.6-dev-feat/standardise-df`, `init.server.url()` reads it as the **full URL**
+  (`http://localhost:8081/` Armadillo, `http://localhost:8080/` Opal). On
+  `refactor/perf-batch-3`, `init.ip.address()` reads it as a **bare host** that
+  `login_details.R` wraps with `http://…:8080`. Wrong form → mangled URL → "Resource
+  assignment failed".
+- **Local Opal is http on :8080** (no `:8443` TLS); the harness Opal default is
+  `https://localhost:8443/`, so override via `local_settings.csv`.
+- **Do NOT create git worktrees** to run a branch's tests. A worktree holds the branch
+  checked out, so the user can't check it out / pull it in their own working dir and ends
+  up with a blocked `fatal: ... already checked out` git state. Check the branch out in the
+  user's normal checkout (ask first), and point `ds-run-tests.R` / `devtools::test(pkg=…)`
+  at that path.
+- **Tests that build expected values with `tibble()`** fail with `could not find
+  function "tibble"` (package not attached in the test run). Fix without adding a dep:
+  build expected as base `data.frame(..., stringsAsFactors = FALSE)` and compare
+  `as.data.frame(actual)`.

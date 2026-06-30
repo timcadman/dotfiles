@@ -26,6 +26,8 @@ Write the whole description in raw Markdown (headings, bullet lists, code fences
 - DataSHIELD work (Opal/Armadillo + dsBase/dsBaseClient) — notes under `~/dotfiles/claude/notes/datashield/`:
   - `launch-datashield-servers-sandbox.md` — start Opal/Armadillo locally (esp. under the sandbox)
   - `start-datashield.sh` — launcher for one or both servers
+  - `ds-install.R <opal|armadillo> <tarball|github-ref>` — install dsBase on a backend
+  - `ds-run-tests.R <opal|armadillo> <filter> [pkg]` — run dsBaseClient test file(s) against a backend
   - `run-dsbaseclient-tests-locally.md` — reproduce CI test failures locally (install the matching dsBase, run failing tests first)
   - `dsbase-refactor-pr-review-checklist.md` — reviewer checklist for the perf-batch refactor PRs
   - `REFACTOR_GUIDE.md` — authoritative refactor plan (server/client function-pair rules)
