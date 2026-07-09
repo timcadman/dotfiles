@@ -8,6 +8,7 @@
 - Do not create new files unless explicitly asked to.
 - Never run destructive commands (rm, remove.packages, etc.) without explicit permission. Suggest the command and let the user run it.
 - Do not make minor whitespace changes (trailing spaces, blank lines, etc.) when editing files. Only change what is necessary for the task.
+- Do not add comments to files (code, tests, config, etc.) unless explicitly asked to.
 - Do not present speculation as fact. If you don't have evidence for a claim, say so or don't make the claim.
 - Run one command per shell invocation. Avoid chaining (`;`, `&&`, `||`) and `cd` — use absolute paths or `git -C <repo>`, and issue independent commands as separate (parallel) tool calls. Some projects enforce this with a hook that rejects chained/`cd` commands.
 - All Claude preferences live in this dotfiles repo (`~/dotfiles/claude/`); `~/.claude/*` are symlinks to it. Always edit the dotfiles source — never write `~/.claude/CLAUDE.md` or `~/.claude/settings.json` directly.

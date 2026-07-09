@@ -1,9 +1,5 @@
 {
   "permissions": {
-    "defaultMode": "default",
-    "additionalDirectories": [
-      "~/git-repos"
-    ],
     "allow": [
       "Read(~/git-repos/**)",
       "Edit(~/git-repos/**)",
@@ -53,25 +49,6 @@
       "WebFetch(domain:api.github.com)",
       "Task"
     ],
-    "ask": [
-      "Bash(npm publish:*)",
-      "Bash(git merge:*)",
-      "Bash(git pull:*)",
-      "Bash(git checkout:*)",
-      "Bash(git switch:*)",
-      "Bash(git rebase:*)",
-      "Bash(git restore:*)",
-      "Bash(git stash drop:*)",
-      "Bash(git stash clear:*)",
-      "Bash(gh pr checkout:*)",
-      "Bash(gh pr edit:*)",
-      "Bash(gh pr comment:*)",
-      "Bash(gh pr review:*)",
-      "Bash(gh issue edit:*)",
-      "Bash(gh issue comment:*)",
-      "Bash(gh run rerun:*)",
-      "Bash(gh workflow run:*)"
-    ],
     "deny": [
       "Bash(gh pr create:*)",
       "Bash(gh pr merge:*)",
@@ -104,13 +81,65 @@
       "Read(**/*credentials*)",
       "Read(~/.ssh/**)",
       "Read(~/.aws/**)"
+    ],
+    "ask": [
+      "Bash(npm publish:*)",
+      "Bash(git merge:*)",
+      "Bash(git pull:*)",
+      "Bash(git checkout:*)",
+      "Bash(git switch:*)",
+      "Bash(git rebase:*)",
+      "Bash(git restore:*)",
+      "Bash(git stash drop:*)",
+      "Bash(git stash clear:*)",
+      "Bash(gh pr checkout:*)",
+      "Bash(gh pr edit:*)",
+      "Bash(gh pr comment:*)",
+      "Bash(gh pr review:*)",
+      "Bash(gh issue edit:*)",
+      "Bash(gh issue comment:*)",
+      "Bash(gh run rerun:*)",
+      "Bash(gh workflow run:*)"
+    ],
+    "defaultMode": "default",
+    "additionalDirectories": [
+      "~/git-repos"
     ]
   },
-  "hooks": { "PreToolUse": [ { "matcher": "Bash", "hooks": [ { "type": "command", "command": "jq -r '.tool_input.command // \"\"' | grep -Eq '(^|[^[:alnum:]_])cd |;|&&|\\|\\|' && jq -n '{hookSpecificOutput:{hookEventName:\"PreToolUse\",permissionDecision:\"deny\",permissionDecisionReason:\"Blocked by local hook: avoid cd and command chaining (; && ||). Use a single simple command with an absolute path or git -C.\"}}' || true" }, { "type": "command", "command": "jq -r '.tool_input.command // \"\"' | grep -Eq '(^|[^[:alnum:]_])git[[:space:]]+([^[:space:]]+[[:space:]]+)*(commit|push)([[:space:]]|$)' && jq -n '{hookSpecificOutput:{hookEventName:\"PreToolUse\",permissionDecision:\"deny\",permissionDecisionReason:\"Blocked by local hook: git commit/push is prohibited here. Ask the user to run it themselves.\"}}' || true" }, { "type": "command", "command": "jq -e 'select(.tool_input.dangerouslyDisableSandbox == true) | select(((.tool_input.command // \"\") | test(\"gradlew|start_servers|remote_\")) | not)' >/dev/null 2>&1 && jq -n '{hookSpecificOutput:{hookEventName:\"PreToolUse\",permissionDecision:\"deny\",permissionDecisionReason:\"Unsandboxed Bash is restricted to the Armadillo launch (gradlew/start_servers). Run other commands sandboxed.\"}}' || true" } ] }, { "matcher": "Write|Edit", "hooks": [ { "type": "command", "command": "jq -e 'select(.tool_input.file_path // \"\" | test(\"/[.]claude/(CLAUDE[.]md|settings([.]local)?[.]json)$\"))' >/dev/null 2>&1 && jq -n '{hookSpecificOutput:{hookEventName:\"PreToolUse\",permissionDecision:\"deny\",permissionDecisionReason:\"~/.claude/* are symlinks to the dotfiles repo. Edit the source at ~/dotfiles/claude/ instead (e.g. ~/dotfiles/claude/CLAUDE.md or ~/dotfiles/claude/settings.json).\"}}' || true" } ] } ] },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "jq -r '.tool_input.command // \"\"' | grep -Eq '(^|[^[:alnum:]_])cd |;|&&|\\|\\|' && jq -n '{hookSpecificOutput:{hookEventName:\"PreToolUse\",permissionDecision:\"deny\",permissionDecisionReason:\"Blocked by local hook: avoid cd and command chaining (; && ||). Use a single simple command with an absolute path or git -C.\"}}' || true"
+          },
+          {
+            "type": "command",
+            "command": "jq -r '.tool_input.command // \"\"' | grep -Eq '(^|[^[:alnum:]_])git[[:space:]]+([^[:space:]]+[[:space:]]+)*(commit|push)([[:space:]]|$)' && jq -n '{hookSpecificOutput:{hookEventName:\"PreToolUse\",permissionDecision:\"deny\",permissionDecisionReason:\"Blocked by local hook: git commit/push is prohibited here. Ask the user to run it themselves.\"}}' || true"
+          },
+          {
+            "type": "command",
+            "command": "jq -e 'select(.tool_input.dangerouslyDisableSandbox == true) | select(((.tool_input.command // \"\") | test(\"gradlew|start_servers|remote_\")) | not)' >/dev/null 2>&1 && jq -n '{hookSpecificOutput:{hookEventName:\"PreToolUse\",permissionDecision:\"deny\",permissionDecisionReason:\"Unsandboxed Bash is restricted to the Armadillo launch (gradlew/start_servers). Run other commands sandboxed.\"}}' || true"
+          }
+        ]
+      },
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "jq -e 'select(.tool_input.file_path // \"\" | test(\"/[.]claude/(CLAUDE[.]md|settings([.]local)?[.]json)$\"))' >/dev/null 2>&1 && jq -n '{hookSpecificOutput:{hookEventName:\"PreToolUse\",permissionDecision:\"deny\",permissionDecisionReason:\"~/.claude/* are symlinks to the dotfiles repo. Edit the source at ~/dotfiles/claude/ instead (e.g. ~/dotfiles/claude/CLAUDE.md or ~/dotfiles/claude/settings.json).\"}}' || true"
+          }
+        ]
+      }
+    ]
+  },
   "sandbox": {
     "enabled": true,
-    "autoAllowBashIfSandboxed": true,
     "failIfUnavailable": true,
+    "autoAllowBashIfSandboxed": true,
     "allowUnsandboxedCommands": true,
     "network": {
       "allowedDomains": [
@@ -137,16 +166,20 @@
         "jitpack.io",
         "registry.npmjs.org",
         "registry.molgenis.org",
-        "armadillo-demo.molgenis.net"
+        "armadillo-demo.molgenis.net",
+        "opal.molgeniscloud.org"
       ],
-      "allowLocalBinding": true,
       "allowUnixSockets": [
         "~/.docker/run/docker.sock"
-      ]
+      ],
+      "allowLocalBinding": true
     },
     "filesystem": {
       "allowWrite": [
         "~/.gradle"
+      ],
+      "allowRead": [
+        "/Users/tcadman/git-repos/ds-molgenis/molgenis-service-armadillo/scripts/benchmark/.env"
       ],
       "denyRead": [
         "~/.ssh",
@@ -160,5 +193,6 @@
       "ps",
       "pgrep"
     ]
-  }
+  },
+  "tui": "fullscreen"
 }
