@@ -176,7 +176,8 @@
     },
     "filesystem": {
       "allowWrite": [
-        "~/.gradle"
+        "~/.gradle",
+        "~/.npm"
       ],
       "allowRead": [
         "/Users/tcadman/git-repos/ds-molgenis/molgenis-service-armadillo/scripts/benchmark/.env"
