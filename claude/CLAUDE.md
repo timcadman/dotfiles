@@ -11,7 +11,6 @@
 - Do not make minor whitespace changes (trailing spaces, blank lines, etc.) when editing files. Only change what is necessary for the task.
 - Do not add comments to files (code, tests, config, etc.) unless explicitly asked to.
 - Do not present speculation as fact. If you don't have evidence for a claim, say so or don't make the claim.
-- Run one command per shell invocation. Avoid chaining (`;`, `&&`, `||`) and `cd` — use absolute paths or `git -C <repo>`, and issue independent commands as separate (parallel) tool calls. Some projects enforce this with a hook that rejects chained/`cd` commands.
 - All Claude preferences live in this dotfiles repo (`~/dotfiles/claude/`); `~/.claude/*` are symlinks to it. Always edit the dotfiles source — never write `~/.claude/CLAUDE.md` or `~/.claude/settings.json` directly.
 
 ## PR summaries
@@ -24,12 +23,7 @@ When asked to write a PR summary/description, keep it concise and always use the
 
 Write the whole description in raw Markdown (headings, bullet lists, code fences) so it can be pasted straight into GitHub. No filler, no restating the diff line by line.
 
-## Reusable notes (check `~/dotfiles/claude/notes/` before redoing setup work)
-- DataSHIELD work (Opal/Armadillo + dsBase/dsBaseClient) — notes under `~/dotfiles/claude/notes/datashield/`:
-  - `launch-datashield-servers-sandbox.md` — start Opal/Armadillo locally (esp. under the sandbox)
-  - `start-datashield.sh` — launcher for one or both servers
-  - `ds-install.R <opal|armadillo> <tarball|github-ref>` — install dsBase on a backend
-  - `ds-run-tests.R <opal|armadillo> <filter> [pkg]` — run dsBaseClient test file(s) against a backend
-  - `run-dsbaseclient-tests-locally.md` — reproduce CI test failures locally (install the matching dsBase, run failing tests first)
-  - `dsbase-refactor-pr-review-checklist.md` — reviewer checklist for the perf-batch refactor PRs
-  - `REFACTOR_GUIDE.md` — authoritative refactor plan (server/client function-pair rules)
+## Reusable notes
+Setup mechanics, sandbox exceptions, and guides live under `~/dotfiles/claude/notes/`
+(DataSHIELD work in `notes/datashield/`). A `SessionStart` hook injects a manifest of these
+files into context each session — read the relevant one before redoing setup work.

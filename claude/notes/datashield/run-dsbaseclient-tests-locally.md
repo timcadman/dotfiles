@@ -38,7 +38,12 @@ server runs a different dsBase, function signatures mismatch and ~everything err
   (e.g. dsBase PR #471 for batch-3 — new `varDS(x=string)`, `.loadServersideObject`,
   `.checkClass`, returns `class`). It does **NOT** pair with dsBase `v7.0-dev`, which
   may not have merged that batch yet.
-- `v6.3.6-dev*` client → dsBase `6.3.6.x`.
+- `v6.3.6-dev*` client → dsBase `6.3.6.x`. "Matching" means the FEATURE, not just the
+  major version: e.g. the standardise client (`v6.3.6-dev-feat/standardise-df`) needs
+  `getClassAllColsDS` / `standardiseDfDS` / `getAllLevelsDS`, which live in dsBase
+  `v6.3.6-dev` (`dsBase_6.3.6.9000.tar.gz`) — NOT in `v7.0-dev` or the perf-batch
+  permissive build. Verify before installing: `tar tzf <tar> | grep <fn>` or
+  `git -C dsBase grep -l <fn> <ref>`.
 
 Check the worktree branch first: `git -C <repo> branch --show-current`. Beware a stale
 local dsBase checkout — `git fetch` before reading its source, or read the PR/branch.
@@ -64,8 +69,8 @@ the v7.0 tarball. While the client is on a batch branch whose dsBase counterpart
 ## 1. Start a server (just one is fine)
 ```bash
 # Armadillo only, on 8081 (Opal, if running, holds 8080):
-bash ~/.claude/notes/start-datashield.sh armadillo
-# or both:  bash ~/.claude/notes/start-datashield.sh both
+bash ~/.claude/notes/datashield/start-datashield.sh armadillo
+# or both:  bash ~/.claude/notes/datashield/start-datashield.sh both
 ```
 Run UNSANDBOXED (gradlew boot needs it) — see launch note. Health:
 `curl -s localhost:8081/actuator/health`  → `{"status":"UP"}`.
@@ -77,7 +82,7 @@ Run UNSANDBOXED (gradlew boot needs it) — see launch note. Health:
 library(MolgenisArmadillo)
 armadillo.login_basic("http://localhost:8081", "admin", "admin")
 armadillo.install_packages(
-  paths   = "/Users/timcadman/git-repos/ds-core/dsBaseClient/dsBase_7.0.0-permissive.tar.gz",
+  paths   = "~/git-repos/ds-core/dsBaseClient/dsBase_7.0.0-permissive.tar.gz",
   profile = "default")
 ```
 Then whitelist it (no R wrapper; hit the endpoint as CI does):
@@ -97,6 +102,8 @@ dsadmin.profile_init(opal, name = "default", packages = c("dsBase","dsTidyverse"
 dsadmin.set_option(opal, "default.datashield.privacyControlLevel", "permissive")
 opal.logout(opal)
 ```
+For a local tarball instead of a github ref, swap the install line for
+`dsadmin.install_local_package(opal, "<tar>")` (keep the `profile_init` / `set_option`).
 
 ## 3. Test data
 The `datashield` project on a long-lived local Armadillo usually already holds
@@ -104,13 +111,19 @@ CNSIM/DASIM/standardise/etc. Check with
 `MolgenisArmadillo::armadillo.list_tables("datashield")`. To (re)upload, run the
 repo's upload script (edit the URL to your port):
 `tests/testthat/data_files/molgenis_armadillo-upload_testing_datasets.R` (Armadillo)
-or `obiba_opal-upload_testing_datasets.R` (Opal).
+or `obiba_opal-upload_testing_datasets.R` (Opal). If a target Opal project doesn't exist
+(e.g. no `STANDARDISE`), `opal.table_save(opal, as_tibble(obj, rownames="_row_id_"),
+"STANDARDISE", table, id.name="_row_id_", force=TRUE)` auto-creates it with
+`database="mongodb"`.
 
 ## 4. Point the harness at the local server
 Two knobs in `tests/testthat/connection_to_datasets/`:
-- **`local_settings.csv`** (gitignored): must be a BARE HOST, e.g. just `localhost`.
-  `login_details.R` does `paste0("http://", <this>, ":8080")`, so a full URL like
-  `http://localhost:8080` mangles to `http://http://...:8080` → "Resource assignment failed".
+- **`local_settings.csv`** (gitignored) — its form differs BY BRANCH, check before setting:
+  `init.ip.address()` (e.g. `refactor/perf-batch-3`) reads it as a BARE HOST that
+  `login_details.R` wraps with `paste0("http://", <this>, ":8080")` — a full URL mangles to
+  `http://http://...:8080` → "Resource assignment failed". `init.server.url()` (e.g.
+  `v6.3.6-dev-feat/standardise-df`) reads it as the FULL URL (`http://localhost:8081/`
+  Armadillo, `http://localhost:8080/` Opal).
 - **Port**: `login_details.R` hardcodes Armadillo on `:8080`.
   - Cleanest: run Armadillo on **8080** (stop Opal) → no edit needed.
   - Coexisting with Opal: Armadillo is on **8081**, so temporarily change the four
@@ -124,13 +137,13 @@ The full smoke suite is very slow. Iterate on just the broken file(s):
 ```r
 options(default_driver = "ArmadilloDriver")   # or "OpalDriver"
 devtools::test(
-  pkg    = "/Users/timcadman/git-repos/ds-core/dsBaseClient",
+  pkg    = "~/git-repos/ds-core/dsBaseClient",
   filter = "smk-ds.var")        # regex on test-<filter>.R; e.g. "smk-ds.var", "standardiseDf"
 ```
 `setup.R` (sourced automatically by devtools::test) wires up the connections.
 Only once the targeted files are green, run everything:
 ```r
-devtools::test(pkg = "/Users/timcadman/git-repos/ds-core/dsBaseClient")
+devtools::test(pkg = "~/git-repos/ds-core/dsBaseClient")
 ```
 
 To see the real server-side reason behind a `There are some DataSHIELD errors`
@@ -144,29 +157,7 @@ testthat backtrace hides it.
   (Armadillo similarly via its profile/rock image). There is NO compose env var to
   pick a dsBase version, and `:latest` floats — local servers drift (seen: 6.3.5 →
   7.0.0.9000 → 6.3.6.9000 on the same Opal). To pin a version, change the rock image
-  tag or — the reliable way — install at runtime (below).
-- **"Matching dsBase" means matching the FEATURE, not just the major version.** A
-  feature branch needs the dsBase that has its server functions. The standardise
-  client (`v6.3.6-dev-feat/standardise-df`) needs `getClassAllColsDS` /
-  `standardiseDfDS` / `getAllLevelsDS`, which live in dsBase `v6.3.6-dev`
-  (`dsBase_6.3.6.9000.tar.gz`) — NOT in `v7.0-dev` or the perf-batch permissive build.
-  Verify before installing: `tar tzf <tar> | grep <fn>` or `git -C dsBase grep -l <fn> <ref>`.
-- **Install a local tarball at runtime:**
-  - Opal: `opalr::dsadmin.install_local_package(opal, "<tar>")` then
-    `dsadmin.profile_init(opal, "default", c("dsBase","resourcer"))` then
-    `dsadmin.set_option(opal, "default.datashield.privacyControlLevel", "permissive")`.
-  - Armadillo: `armadillo.install_packages(paths="<tar>", profile="default")` then
-    `curl -u admin:admin -X POST http://localhost:8081/whitelist/dsBase`.
-- **Data must exist on the backend you target.** Local Armadillo already had
-  `datashield/standardise/*`; local Opal had no `STANDARDISE` project and needed an
-  upload: `opal.table_save(opal, as_tibble(obj, rownames="_row_id_"), "STANDARDISE",
-  table, id.name="_row_id_", force=TRUE)` (auto-creates project with `database="mongodb"`).
-- **`local_settings.csv` semantics differ BY BRANCH — check before setting it.**
-  On `v6.3.6-dev-feat/standardise-df`, `init.server.url()` reads it as the **full URL**
-  (`http://localhost:8081/` Armadillo, `http://localhost:8080/` Opal). On
-  `refactor/perf-batch-3`, `init.ip.address()` reads it as a **bare host** that
-  `login_details.R` wraps with `http://…:8080`. Wrong form → mangled URL → "Resource
-  assignment failed".
+  tag or — the reliable way — install at runtime (§2).
 - **Local Opal is http on :8080** (no `:8443` TLS); the harness Opal default is
   `https://localhost:8443/`, so override via `local_settings.csv`.
 - **Do NOT create git worktrees** to run a branch's tests. A worktree holds the branch

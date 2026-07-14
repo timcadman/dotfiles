@@ -1,6 +1,6 @@
 # Refactoring Plan: dsBase & dsBaseClient Function Pairs
 
-> **Action:** Replace `/Users/tcadman/github-repos/ds-core/dsBaseClient/REFACTOR_GUIDE.md` with this plan content so it's accessible across branches.
+> **Action:** Replace `~/git-repos/ds-core/dsBaseClient/REFACTOR_GUIDE.md` with this plan content so it's accessible across branches.
 
 ## Context
 
@@ -12,8 +12,8 @@ The refactored `ds.colnames` branch (`v7.0-dev-colnames`) also introduces shared
 
 ## Relationship Between Packages
 
-- **dsBaseClient** (`/Users/tcadman/github-repos/ds-core/dsBaseClient/R/`) — Client functions (`ds.functionName`) that validate inputs and dispatch calls to server
-- **dsBase** (`/Users/tcadman/github-repos/ds-core/dsBase/R/`) — Server functions (`functionNameDS`) that execute on the data
+- **dsBaseClient** (`~/git-repos/ds-core/dsBaseClient/R/`) — Client functions (`ds.functionName`) that validate inputs and dispatch calls to server
+- **dsBase** (`~/git-repos/ds-core/dsBase/R/`) — Server functions (`functionNameDS`) that execute on the data
 
 ## What Changes Per Function Pair
 
@@ -417,15 +417,15 @@ Before marking a batch complete:
 
 ### Reference implementation
 - Client refactored: `git show v7.0-dev-colnames:R/ds.colnames.R`
-- Server refactored: `/Users/tcadman/github-repos/ds-core/dsBase/R/colnamesDS.R`
+- Server refactored: `~/git-repos/ds-core/dsBase/R/colnamesDS.R`
 - Client utils: `git show v7.0-dev-colnames:R/utils.R`
-- Server utils: `/Users/tcadman/github-repos/ds-core/dsBase/R/utils.R`
-- Server tests: `/Users/tcadman/github-repos/ds-core/dsBase/tests/testthat/test-smk-colnamesDS.R`
-- Client tests: `/Users/tcadman/github-repos/ds-core/dsBaseClient/tests/testthat/test-smk-ds.colnames.R`
+- Server utils: `~/git-repos/ds-core/dsBase/R/utils.R`
+- Server tests: `~/git-repos/ds-core/dsBase/tests/testthat/test-smk-colnamesDS.R`
+- Client tests: `~/git-repos/ds-core/dsBaseClient/tests/testthat/test-smk-ds.colnames.R`
 
 ### Guides
-- `/Users/tcadman/github-repos/ds-core/dsBaseClient/REFACTOR_GUIDE.md`
-- `/Users/tcadman/github-repos/ds-core/dsBase/.github/pull_request_template`
+- `~/git-repos/ds-core/dsBaseClient/REFACTOR_GUIDE.md`
+- `~/git-repos/ds-core/dsBase/.github/pull_request_template`
 
 ## Verification
 

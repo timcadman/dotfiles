@@ -2,8 +2,9 @@
 
 Reusable note for the `armadillo-opal-comparison` benchmark.
 
-> To reproduce dsBaseClient CI test failures locally (install dsBase, point the
-> harness, run failing tests first), see `run-dsbaseclient-tests-locally.md`.
+> Reproduce dsBaseClient CI test failures locally (install dsBase, point the harness,
+> run failing tests first): `run-dsbaseclient-tests-locally.md`.
+> Armadillo sandbox rules + stale-gradle-daemon gotcha: `armadillo-local-run.md`.
 > Parameterized launcher (start just one server): `start-datashield.sh`.
 
 ## Paths ($HOME-relative, neutral across laptops)
@@ -12,26 +13,13 @@ Reusable note for the `armadillo-opal-comparison` benchmark.
 - dsBaseClient data: `~/git-repos/ds-core/dsBaseClient/tests/testthat/data_files`
 
 ## Launch
-`start_servers.sh` is the launcher (auto-detects the Armadillo checkout, logs to
+`start-datashield.sh` is the launcher (auto-detects the Armadillo checkout, logs to
 `$TMPDIR`/`ARMA_LOG_DIR`). Opal comes up via Docker; Armadillo via `./gradlew run`.
 
-Under the Claude Code sandbox: Opal works sandboxed (Docker socket allowed in
-`~/dotfiles/claude/settings.json`). **Armadillo must run UNSANDBOXED** — its
-`gradlew run` boot makes an OIDC call the sandbox's authenticated proxy blocks
-(407, since the JVM can't auth to the proxy). So launch `start_servers.sh` with
-`dangerouslyDisableSandbox: true`. `sandbox.allowUnsandboxedCommands` is enabled,
-and a `PreToolUse` Bash hook restricts unsandboxed commands to ones matching
-`gradlew|start_servers`.
-
-**Critical gotcha — kill stale gradle daemons first.** Gradle reuses a background
-daemon across invocations. If an earlier *sandboxed* `gradlew` run left a daemon,
-a later *unsandboxed* run reconnects to it and the build executes under the OLD
-sandbox profile → `EPERM` writing yarn/jest cache+temp (`~/Library/Caches/Yarn`,
-`/var/folders/.../T`), which looks like a cache-permission problem but is not.
-Fix: run `<ARMADILLO_DIR>/gradlew --stop` (unsandboxed) once before launching, so
-`start_servers.sh` spawns a fresh, truly-unsandboxed daemon. Then NO proxy /
-YARN_CACHE_FOLDER / TMPDIR overrides are needed — the default writable locations
-work because the process is genuinely unsandboxed.
+Under the Claude Code sandbox, Opal works sandboxed (Docker socket allowed in
+`~/dotfiles/claude/settings.json`), but **Armadillo must run UNSANDBOXED** — launch
+`start-datashield.sh` with `dangerouslyDisableSandbox: true`, and kill stale gradle
+daemons first. Full rationale + the EPERM/stale-daemon gotcha: `armadillo-local-run.md`.
 
 Then (sandboxed is fine; loopback allowed): `ARMA_AUTH=basic Rscript setup.R`,
 then `DURATION_SEC=2 REPS=1 Rscript bench.R`.
