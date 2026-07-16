@@ -1,5 +1,6 @@
 # Global Preferences
 
+- **At the start of every session, before acting:** read `CLAUDE.md` in the current project AND in every other working/sandboxed directory (additional working directories are separate repos whose `CLAUDE.md` is NOT auto-loaded into context), and review your auto-memory (`MEMORY.md` index + any relevant memory files). Run/setup mechanics and sandbox exceptions (e.g. how to run a benchmark, which commands may run unsandboxed) frequently live in a sibling repo's `CLAUDE.md`, a note under `~/dotfiles/claude/notes/`, or a memory — check those before concluding something can't be done or inventing a workaround.
 - Do not add "Co-Authored-By" lines to commit messages
 - Commit messages should be short
 - Always explain code changes before making them
@@ -10,7 +11,6 @@
 - Do not make minor whitespace changes (trailing spaces, blank lines, etc.) when editing files. Only change what is necessary for the task.
 - Do not add comments to files (code, tests, config, etc.) unless explicitly asked to.
 - Do not present speculation as fact. If you don't have evidence for a claim, say so or don't make the claim.
-- Run one command per shell invocation. Avoid chaining (`;`, `&&`, `||`) and `cd` — use absolute paths or `git -C <repo>`, and issue independent commands as separate (parallel) tool calls. Some projects enforce this with a hook that rejects chained/`cd` commands.
 - All Claude preferences live in this dotfiles repo (`~/dotfiles/claude/`); `~/.claude/*` are symlinks to it. Always edit the dotfiles source — never write `~/.claude/CLAUDE.md` or `~/.claude/settings.json` directly.
 
 ## PR summaries
@@ -26,6 +26,10 @@ Write the whole description in raw Markdown (headings, bullet lists, code fences
 ## Reusable notes (check `~/dotfiles/claude/notes/` before redoing setup work)
 - DataSHIELD work (Opal/Armadillo + dsBase/dsBaseClient) — notes under `~/dotfiles/claude/notes/datashield/`:
   - `launch-datashield-servers-sandbox.md` — start Opal/Armadillo locally (single launcher = the armadillo repo's `scripts/benchmark/`: `run_local_armadillo.sh` jar / `start_servers.sh` both)
+  - `armadillo-local-run.md` — run Armadillo from source (`./gradlew run`, unsandboxed dev path) + the stale-gradle-daemon gotcha
+  - `armadillo-storage-api.md` — Armadillo storage / CSV REST API endpoints (basic auth `admin:admin`)
+  - `armadillo-release-tests.md` — Armadillo release/integration test suite (`scripts/release`)
+  - `armadillo-opal-comparison.md` — Armadillo vs Opal benchmark slide deck (source lives in the `presentations` repo)
   - `ds-install.R <opal|armadillo> <tarball|github-ref>` — install dsBase on a backend
   - `ds-run-tests.R <opal|armadillo> <filter> [pkg]` — run dsBaseClient test file(s) against a backend
   - `run-dsbaseclient-tests-locally.md` — reproduce CI test failures locally (install the matching dsBase, run failing tests first)

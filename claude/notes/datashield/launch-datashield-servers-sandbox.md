@@ -33,7 +33,11 @@ Both the jar and Docker run **sandboxed**: the Docker socket is allowed
 `gradlew run`, the jar uses basic auth and makes no OIDC-on-boot call for the
 sandbox proxy to block (407), so there's no unsandboxed-launch / stale-gradle-daemon
 dance. If a launch ever does need unsandboxed, the `PreToolUse` Bash hook permits
-commands matching `start_servers` (run via `start_servers.sh`).
+commands matching `gradlew|start_servers|run_benchmark|ds_unsandboxed`.
+
+To run Armadillo **from source** (`./gradlew run`) instead of the jar — the dev /
+full-build path, which must run unsandboxed and has a stale-gradle-daemon gotcha — see
+`armadillo-local-run.md`.
 
 ## Paths
 - Armadillo checkout: `$ARMA` (see top)
