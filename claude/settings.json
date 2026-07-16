@@ -121,7 +121,7 @@
           },
           {
             "type": "command",
-            "command": "jq -e 'select(.tool_input.dangerouslyDisableSandbox == true) | select(((.tool_input.command // \"\") | test(\"gradlew|start_servers|remote_\")) | not)' >/dev/null 2>&1 && jq -n '{hookSpecificOutput:{hookEventName:\"PreToolUse\",permissionDecision:\"deny\",permissionDecisionReason:\"Unsandboxed Bash is restricted to the Armadillo launch (gradlew/start_servers). Run other commands sandboxed.\"}}' || true"
+            "command": "jq -e 'select(.tool_input.dangerouslyDisableSandbox == true) | select(((.tool_input.command // \"\") | test(\"gradlew|start_servers|run_benchmark|ds_unsandboxed\")) | not)' >/dev/null 2>&1 && jq -n '{hookSpecificOutput:{hookEventName:\"PreToolUse\",permissionDecision:\"deny\",permissionDecisionReason:\"Unsandboxed Bash is restricted to the Armadillo launch (gradlew/start_servers). Run other commands sandboxed.\"}}' || true"
           }
         ]
       },
@@ -167,7 +167,10 @@
         "registry.npmjs.org",
         "registry.molgenis.org",
         "armadillo-demo.molgenis.net",
-        "opal.molgeniscloud.org"
+        "opal.molgeniscloud.org",
+        "armadillo-playground.molgenis.net",
+        "auth1.molgenis.net",
+        "opal-demo.obiba.org"
       ],
       "allowUnixSockets": [
         "~/.docker/run/docker.sock"

@@ -1,8 +1,8 @@
 # Running dsBaseClient tests locally against Opal / Armadillo
 
 Reusable workflow for reproducing CI test failures locally. Companion to
-`launch-datashield-servers-sandbox.md` (how to start the servers) and
-`start-datashield.sh` (the launcher).
+`launch-datashield-servers-sandbox.md` (how to start the servers via the armadillo
+repo's `scripts/benchmark/` launcher).
 
 ## TL;DR order of operations
 1. Start the backend (Armadillo or Opal).
@@ -13,7 +13,7 @@ Reusable workflow for reproducing CI test failures locally. Companion to
 
 ## Helper scripts (in this folder)
 Two parameterised scripts wrap steps 2 + 4–5 so you don't hand-write scratch R each
-time. First arg is always `opal|armadillo` (matching `start-datashield.sh`).
+time. First arg is always `opal|armadillo`.
 
 ```bash
 # Install the matching dsBase on a backend (tarball, or github ref for Opal):
@@ -62,13 +62,17 @@ the v7.0 tarball. While the client is on a batch branch whose dsBase counterpart
 `refactor/perf-batch-3` (or merge that dsBase PR into `v7.0-dev`).
 
 ## 1. Start a server (just one is fine)
+Launcher lives in the armadillo repo's benchmark dir. `$ARMA` = your checkout
+(`~/git-repos/ds-molgenis/molgenis-service-armadillo` or `.../molgenis/...`).
 ```bash
-# Armadillo only, on 8081 (Opal, if running, holds 8080):
-bash ~/.claude/notes/start-datashield.sh armadillo
-# or both:  bash ~/.claude/notes/start-datashield.sh both
+# Armadillo only (released jar), on 8080 -- matches login_details.R (see §4):
+ARMADILLO_VERSION=5.12.2 ARMA_LOCAL_PORT=8080 ARMA_USER=admin ARMA_PASS=admin \
+  bash "$ARMA/scripts/benchmark/run_local_armadillo.sh"
+# Opal only:  docker compose -f "$ARMA/scripts/benchmark/opal/docker-compose.yml" up -d
+# Both:       bash "$ARMA/scripts/benchmark/start_servers.sh"   (reads that dir's .env)
 ```
-Run UNSANDBOXED (gradlew boot needs it) — see launch note. Health:
-`curl -s localhost:8081/actuator/health`  → `{"status":"UP"}`.
+The jar uses basic auth so it runs sandboxed (no gradlew OIDC-boot dance — see launch
+note). Health: `curl -s localhost:8080/actuator/health` → `{"status":"UP"}`.
 
 ## 2. Install dsBase on the server
 
@@ -99,12 +103,23 @@ opal.logout(opal)
 ```
 
 ## 3. Test data
-The `datashield` project on a long-lived local Armadillo usually already holds
-CNSIM/DASIM/standardise/etc. Check with
-`MolgenisArmadillo::armadillo.list_tables("datashield")`. To (re)upload, run the
-repo's upload script (edit the URL to your port):
-`tests/testthat/data_files/molgenis_armadillo-upload_testing_datasets.R` (Armadillo)
-or `obiba_opal-upload_testing_datasets.R` (Opal).
+A long-lived local Armadillo usually already holds CNSIM/DASIM/standardise/etc, but a
+**fresh server (released jar via `run_local_armadillo.sh`) starts EMPTY** — you MUST run
+the upload script or every test fails at login with `table datashield/cnsim/CNSIM1 is
+not accessible` (all studies excluded → the `D` object is never created → 0 PASS).
+Check first with `MolgenisArmadillo::armadillo.list_tables("datashield")`.
+
+Upload (Armadillo — script already targets `http://127.0.0.1:8080`, admin/admin):
+```bash
+# The script uses RELATIVE .rda paths, so it must run from the data_files dir. The
+# no-cd/no-chaining hook blocks `Rscript -e 'setwd(...); source(...)'`, so use a
+# tiny wrapper file instead (setwd + source on separate lines) and run that:
+printf 'setwd("%s")\nsource("molgenis_armadillo-upload_testing_datasets.R")\n' \
+  ~/git-repos/ds-core/dsBaseClient/tests/testthat/data_files > /tmp/upload_data.R
+Rscript /tmp/upload_data.R
+```
+Opal equivalent: `obiba_opal-upload_testing_datasets.R`. Takes a minute or two; it
+prints the final `armadillo.list_tables("datashield")` (~39 tables) on success.
 
 ## 4. Point the harness at the local server
 Two knobs in `tests/testthat/connection_to_datasets/`:
@@ -133,9 +148,56 @@ Only once the targeted files are green, run everything:
 devtools::test(pkg = "/Users/timcadman/git-repos/ds-core/dsBaseClient")
 ```
 
+**Always validate against BOTH Armadillo and Opal.** CI runs the suite on each
+backend and they diverge (different drivers, disclosure defaults, object-loading
+paths — an Armadillo pass is not an Opal pass and vice versa). Run the same filter
+against each and reconcile before calling a branch green:
+```bash
+Rscript ~/.claude/notes/datashield/ds-run-tests.R armadillo <filter>
+Rscript ~/.claude/notes/datashield/ds-run-tests.R opal      <filter>
+```
+Each needs the matching dsBase installed (§0/§2) and its own test data uploaded (§3).
+
 To see the real server-side reason behind a `There are some DataSHIELD errors`
 abort, reproduce the single call and print `DSI::datashield.errors()` — the
 testthat backtrace hides it.
+
+## 6. What CI actually runs (mirror it locally)
+Configs: `.github/workflows/dsBaseClient_test_suite.yaml` (Armadillo, GHA) and
+`opal_azure-pipelines.yml` / `armadillo_azure-pipelines.yml` (Azure). To reproduce a
+CI result locally, match its filter + options, not an ad-hoc file list.
+
+- **Test filter (which files run)** — a regex on the file stem (after `test-`, before
+  `.R`), same on both backends' main phase:
+  ```
+  _-|datachk-|smk-|arg-|disc-|perf-|smk_expt-|expt-|math-
+  ```
+  This DELIBERATELY excludes `smk_dgr-` (and every `*_dgr-`). The "danger" tests run in
+  a SEPARATE later phase, only AFTER `dsDanger` is installed on the server:
+  ```
+  __dgr-|datachk_dgr-|smk_dgr-|arg_dgr-|disc_dgr-|smk_expt_dgr-|expt_dgr-|math_dgr-
+  ```
+  So: a plain run must NOT include `smk_dgr-*` (they error with `ds.DANGERdfEXTRACT` →
+  `DataSHIELD errors` unless dsDanger is on the server). `dsDangerClient` is only the
+  client half; the server needs `dsadmin.install_github_package(opal,'dsDanger',ref='6.3.4')`.
+- **No early stop.** CI uses `ProgressReporter$new(max_failures = 999999)` +
+  `stop_on_failure = FALSE` + `options(datashield.return_errors = FALSE)`. Locally,
+  `devtools::test()` defaults to `TESTTHAT_MAX_FAILS=10` and WILL terminate early — set
+  `Sys.setenv(TESTTHAT_MAX_FAILS="999999")` and pass `stop_on_failure = FALSE`, or a
+  handful of failures aborts the run and later files never execute.
+- **dsBase build.** Armadillo GHA installs `dsBase_7.0.0-permissive.tar.gz` (prebuilt);
+  Opal Azure installs from github (`ref='v7.0-dev'`) then
+  `dsadmin.set_option(opal,'default.datashield.privacyControlLevel','permissive')` — the
+  runtime option is equivalent to the permissive build, so a github install + that option
+  == the permissive tarball. Build the permissive tarball with
+  `git-repos/testing/build-permissive.sh` (source of truth; outputs `dsBase_<ver>.tar.gz`
+  with `.9000` stripped into the dsBaseClient root).
+- **Opal needs package admin ENABLED first**, or `dsadmin.install_*_package` → `403
+  Forbidden`. CI runs `opal.put(opal,'system','conf','general','_rPackage')` before
+  installing. `ds-install.R` now does this automatically.
+- **To run the touched-function subset CI-faithfully:** take the branch's changed
+  `test-*.R` files, keep only stems matching the main filter above (drop `*_dgr-`), and
+  run them with `stop_on_failure=FALSE` + high `TESTTHAT_MAX_FAILS` under each driver.
 
 ## Gotchas learned from real runs
 

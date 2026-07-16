@@ -54,6 +54,10 @@ if (backend == "armadillo") {
   on.exit(opal.logout(opal), add = TRUE)
   before <- tryCatch(dsadmin.package_description(opal, "dsBase")$Version, error = function(e) "none")
   cat(sprintf("[ds-install] Opal %s  dsBase before: %s\n", url, before))
+  # Enable R package administration, else install_*_package returns 403 Forbidden
+  # on a fresh Opal (mirrors the CI 'opal.put ... _rPackage' step).
+  tryCatch(opal.put(opal, "system", "conf", "general", "_rPackage"),
+           error = function(e) cat(sprintf("[ds-install] _rPackage enable warning: %s\n", conditionMessage(e))))
   if (is_tar) {
     cat(sprintf("[ds-install] installing local tarball %s\n", basename(src)))
     dsadmin.install_local_package(opal, src)
