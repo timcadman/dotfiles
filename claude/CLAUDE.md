@@ -35,3 +35,5 @@ Write the whole description in raw Markdown (headings, bullet lists, code fences
   - `run-dsbaseclient-tests-locally.md` — reproduce CI test failures locally (install the matching dsBase, run failing tests first)
   - `dsbase-refactor-pr-review-checklist.md` — reviewer checklist for the perf-batch refactor PRs
   - `REFACTOR_GUIDE.md` — authoritative refactor plan (server/client function-pair rules)
+- Flower federated-learning apps (run locally, simulation) — `~/dotfiles/claude/notes/flower-run-local.md`:
+  - Flower 1.32 config model (`~/.flwr/config.toml`), how to see logs, and the two "hangs at Starting logstream" gotchas (missing Ray; stale local SuperLink daemon on 39093)
