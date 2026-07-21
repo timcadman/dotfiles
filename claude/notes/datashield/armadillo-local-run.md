@@ -1,7 +1,7 @@
 # Running Armadillo locally
 
 Armadillo is a Spring Boot app built with Gradle. Checkout:
-`~/git-repos/molgenis/molgenis-service-armadillo` (older layout: `~/git-repos/ds-molgenis/...`).
+`~/git-repos/ds-molgenis/molgenis-service-armadillo`.
 
 For most quick/test/CSV work, prefer the **released jar**, launched **sandboxed** via
 the benchmark scripts (`run_local_armadillo.sh` / `start_servers.sh`) — see
@@ -9,28 +9,35 @@ the benchmark scripts (`run_local_armadillo.sh` / `start_servers.sh`) — see
 `./gradlew run` (the dev / full-build path), which must run **unsandboxed** (see Sandbox
 below).
 
+**Armadillo runs on 8080. Never put it on 8081 — that port belongs to Opal**, and an
+Armadillo squatting there blocks Opal's compose from binding and silently absorbs admin
+calls aimed at Opal (`ds-install.R opal`, whitelist POSTs). See
+`launch-datashield-servers-sandbox.md`.
+
 **ALWAYS check whether an Armadillo is already running before starting a new one.**
 
-1. **Check the conventional port (8081) first and reuse it if healthy:**
+1. **Check 8080 first and reuse it if healthy:**
    ```
-   curl -fsS http://localhost:8081/actuator/health      # -> {"status":"UP"}
-   curl -s -u admin:admin http://localhost:8081/access/projects
+   curl -fsS http://localhost:8080/actuator/health      # -> {"status":"UP"}
+   curl -s -u admin:admin http://localhost:8080/access/projects
    ```
    If it responds `UP`, **reuse it** — do not start another. Basic auth is `admin` / `admin`.
 
-2. **Check what's actually listening before picking a port** (8080 is often taken by a
-   Keycloak Docker container, 8081 by an already-running Armadillo):
+2. **Check what's actually listening before starting anything:**
    ```
-   lsof -nP -iTCP:8081 -sTCP:LISTEN
+   lsof -nP -iTCP:8080 -sTCP:LISTEN
+   lsof -nP -iTCP:8081 -sTCP:LISTEN    # any java here is a stray Armadillo — kill it
    ```
-   If the port you want is busy, pick a genuinely free one rather than guessing.
+   If 8080 is genuinely occupied by something else, stop that rather than moving Armadillo
+   to 8081. `login_details.R` hardcodes `:8080` for `ArmadilloDriver`, so the dsBaseClient
+   test harness cannot reach an Armadillo on any other port without patching it.
 
 3. **Only if nothing is running, start it.** The canonical command is:
    ```
-   SERVER_PORT=8081 ./gradlew run
+   SERVER_PORT=8080 ./gradlew run
    ```
-   - Port 8081, basic auth `admin` / `admin`.
-   - Readiness: `curl -fsS http://localhost:8081/actuator/health`.
+   - Port 8080, basic auth `admin` / `admin`.
+   - Readiness: `curl -fsS http://localhost:8080/actuator/health`.
    - Stop: `pkill -f 'gradlew run'`.
 
    Or, for the sandboxed jar path (no build), use the benchmark launchers

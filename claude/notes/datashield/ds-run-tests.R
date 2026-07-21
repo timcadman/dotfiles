@@ -14,8 +14,8 @@
 #
 # Env overrides:
 #   PKG       default ~/git-repos/ds-core/dsBaseClient  (or pass as 3rd arg)
-#   OPAL_URL  default http://localhost:8080/
-#   ARMA_URL  default http://localhost:8081/
+#   OPAL_URL  default http://localhost:8081/
+#   ARMA_URL  default http://localhost:8080/
 #
 # What it does: picks the driver + URL, writes local_settings.csv in the form the
 # checked-out branch expects (full-URL vs bare-host — auto-detected), then runs
@@ -31,8 +31,8 @@ filter  <- args[[2]]
 pkg <- if (length(args) >= 3 && nzchar(args[[3]])) args[[3]] else Sys.getenv("PKG", "~/git-repos/ds-core/dsBaseClient")
 pkg <- path.expand(pkg)
 
-opal_url <- Sys.getenv("OPAL_URL", "http://localhost:8080/")
-arma_url <- Sys.getenv("ARMA_URL", "http://localhost:8081/")
+opal_url <- Sys.getenv("OPAL_URL", "http://localhost:8081/")
+arma_url <- Sys.getenv("ARMA_URL", "http://localhost:8080/")
 
 cfg <- switch(backend,
   opal      = list(driver = "OpalDriver",      url = opal_url),
@@ -60,13 +60,19 @@ cat(sprintf("[ds-run-tests] local_settings.csv = %s  (%s form)\n",
             value, if (uses_full_url) "full-URL" else "bare-host"))
 cat(sprintf("[ds-run-tests] pkg=%s  filter='%s'\n", pkg, filter))
 
-# Bare-host branches hardcode Armadillo's port as :8080 in login_details.R. If you
-# run Armadillo on :8081 alongside Opal, those branches won't reach it without
-# patching login_details.R (see note §4). Cleanest: run Armadillo on :8080 (stop Opal).
-if (!uses_full_url && backend == "armadillo" && grepl(":8081", cfg$url, fixed = TRUE))
-  cat("[ds-run-tests] WARNING: bare-host branch + Armadillo on :8081 — login_details.R",
-      "hardcodes :8080; patch it or run Armadillo on :8080.\n")
+# 8081 belongs to Opal. An Armadillo there is a setup error (it also swallows admin
+# calls aimed at Opal) — stop it and run Armadillo on 8080, which is what
+# login_details.R hardcodes for bare-host branches.
+if (backend == "armadillo" && grepl(":8081", cfg$url, fixed = TRUE))
+  cat("[ds-run-tests] WARNING: Armadillo on :8081 — that is Opal's port. Stop it and",
+      "use :8080 (login_details.R hardcodes :8080).\n")
+
+# Mirror CI: never stop early. devtools::test() otherwise honours TESTTHAT_MAX_FAILS=10
+# and terminates before later files run, which looks like a clean pass. CI uses
+# max_failures = 999999 + stop_on_failure = FALSE + datashield.return_errors = FALSE.
+if (Sys.getenv("TESTTHAT_MAX_FAILS") == "") Sys.setenv(TESTTHAT_MAX_FAILS = "999999")
+options(datashield.return_errors = FALSE)
 
 options(default_driver = cfg$driver)
 suppressMessages(library(devtools))
-devtools::test(pkg = pkg, filter = filter)
+devtools::test(pkg = pkg, filter = filter, stop_on_failure = FALSE)

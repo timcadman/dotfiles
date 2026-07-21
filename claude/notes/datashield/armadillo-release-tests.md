@@ -2,7 +2,7 @@
 
 R-based end-to-end suite that drives a running Armadillo (create projects, upload
 data/resources, run DataSHIELD). It is **not** run by `main.yml`. Repo:
-`~/git-repos/molgenis/molgenis-service-armadillo`. See also `armadillo-local-run.md`.
+`~/git-repos/ds-molgenis/molgenis-service-armadillo`. See also `armadillo-local-run.md`.
 
 - **One-time:** `./install_release_script_dependencies.R`
 - **Run** (must be from the `scripts/release` dir — it reads `./.env` and relative

@@ -2,6 +2,7 @@
   "permissions": {
     "allow": [
       "Read(~/git-repos/**)",
+      "Read(~/dotfiles/**)",
       "Edit(~/git-repos/**)",
       "Write(~/git-repos/**)",
       "Bash(npm run:*)",
@@ -106,6 +107,7 @@
       "~/git-repos"
     ]
   },
+  "model": "opus[1m]",
   "hooks": {
     "PreToolUse": [
       {
@@ -188,16 +190,16 @@
         "~/.gradle",
         "~/.npm"
       ],
-      "allowRead": [
-        "~/git-repos/molgenis/molgenis-service-armadillo/scripts/benchmark/.env",
-        "~/git-repos/ds-molgenis/molgenis-service-armadillo/scripts/benchmark/.env"
-      ],
       "denyRead": [
         "~/.ssh",
         "~/.aws",
         "~/.config/gcloud",
         "~/.Renviron",
         "~/.netrc"
+      ],
+      "allowRead": [
+        "~/git-repos/molgenis/molgenis-service-armadillo/scripts/benchmark/.env",
+        "~/git-repos/ds-molgenis/molgenis-service-armadillo/scripts/benchmark/.env"
       ]
     },
     "excludedCommands": [

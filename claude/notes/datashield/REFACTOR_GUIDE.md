@@ -1,6 +1,6 @@
 # Refactoring Plan: dsBase & dsBaseClient Function Pairs
 
-> **Action:** Replace `~/git-repos/ds-core/dsBaseClient/REFACTOR_GUIDE.md` with this plan content so it's accessible across branches.
+> **This file (`~/dotfiles/claude/notes/datashield/REFACTOR_GUIDE.md`) is the source of truth.** Do not commit copies of it to dsBase or dsBaseClient; remove any `REFACTOR_GUIDE.md` inherited from older batch branches (and the `^REFACTOR_GUIDE\.md$` line in `.Rbuildignore`).
 
 ## Context
 
@@ -358,7 +358,7 @@ Most complex. Multiple server calls, complex validation logic.
 When creating a new batch branch (in either repo) from `origin/v7.0-dev`:
 
 1. **dsBaseClient:** copy `R/utils.R` from the most recently refactored client branch (e.g. `origin/refactor/perf-batch-4`). `origin/v7.0-dev` on the client does not yet contain it — it only enters `v7.0-dev` once the batch-1 or batch-2 client PR merges.
-2. **dsBaseClient:** copy `REFACTOR_GUIDE.md` from the same branch, and add `^REFACTOR_GUIDE\.md$` to `.Rbuildignore` if not already there. This keeps the guide alongside the code being refactored so rules added in later batches are visible to everyone.
+2. **dsBaseClient:** if the branch you're bootstrapping from carries a `REFACTOR_GUIDE.md`, do NOT bring it along — the dotfiles copy is the source of truth (see note at top). Remove the file and its `.Rbuildignore` entry if inherited.
 3. **dsBase:** no bootstrap copy needed — `R/utils.R` with `.loadServersideObject` / `.checkClass` is already in `origin/v7.0-dev` (merged with batch-1).
 
 Commit the bootstrap separately (message: `chore: bootstrap batch-N from batch-M`) before starting the refactor work.
@@ -436,6 +436,30 @@ For each batch:
 4. Run full test suite: `devtools::test(filter = "smk-|disc|arg")` to check no regressions
 5. Run perf tests: `PERF_DURATION_SEC=2 devtools::test(filter = "perf-")` to verify no performance regression
 
+## Follow-up: replace clientside `*.transmit` deserialisation via `eval(parse())`
+
+**TODO (dedicated cross-cutting branch, not part of any batch):** several server functions
+receive clientside **values** (not object names) serialised as comma-separated strings and
+deserialise them with `strsplit(...)` → `eval(parse(text=...))` → `as.numeric(...)`
+(e.g. `matrixDS`: `mdata.transmit`/`nrows.transmit`/`ncols.transmit`; `matrixDiagDS`:
+`x1.transmit`/`nrows.transmit`; others findable by grepping for `eval(parse` next to
+`strsplit`). The `eval(parse())` is unnecessary — for every legitimate input it is
+equivalent to direct conversion:
+
+```r
+mdata <- as.numeric(unlist(strsplit(mdata.transmit, split=",")))
+```
+
+Replacing it removes the last code-execution path through these functions and lets the
+`nfilter.stringShort` guards on the `*.transmit` parameters be dropped too (they are
+currently kept precisely because those strings still reach `parse()`). Precedent: batch-4
+already did this for the literal-scalar case in `BooleDS`
+(`suppressWarnings(as.numeric(V2.name))`).
+
+Do this as one consistent pass across every function using the idiom (the same pattern
+appears in not-yet-refactored functions, e.g. `ds.rep`/`ds.seq` and the random-generation
+batch), rather than piecemeal within a batch.
+
 ## Follow-up: refactor client-side `checkClass`
 
 The client-side helper `checkClass()` currently does two jobs in one: (a) fetches the class of a server-side object and (b) checks the class is consistent across studies. After this refactor, the first job is redundant (the server returns `class` in aggregate results), but the second is still needed by composite dispatchers (`ds.summary` and similar).
@@ -447,3 +471,16 @@ Planned cleanup (defer to a dedicated branch):
 - Update the remaining callers (`ds.summary` and any others still holding a client-side class pre-fetch).
 
 Not done as part of any single batch because the rename touches callers outside that batch's function set and would break functions not yet refactored. Schedule once all batches are merged — the rename then becomes one small, isolated commit.
+
+## Follow-up: settle the `newobj` default-and-validate helper
+
+Dropping MODULE 5 also dropped the only thing that rejected a non-character `newobj`. Nothing client-side ever validated it — every `newobj` in `R/` is just an `is.null()` default — so the `expt`/`expt_dgr` tests that pass `newobj = 23` and expect an error started failing (batch 4, `ds.dataFrameSort`). Fixed there with `.check_newobj_name()` + `.set_newobj_name()` in `R/utils.R`.
+
+Two things to settle once the batches are done, not per-batch:
+
+- **Naming.** `.set_newobj_name()` both applies the default and validates, but `set` reads as a command and hides that it can abort. Prefer a name describing what it returns (e.g. `.resolve_newobj_name()`). Note `.set_datasources()` has the identical smell, so decide both together and rename in one commit.
+- **Coverage.** Only `ds.dataFrameSort` calls it. Every other function that lost MODULE 5 has the same gap and will fail the same way if its tests assert on a bad `newobj`. Sweep them all at the end.
+
+**Ordering is load-bearing:** apply the default *before* validating. `newobj = NULL` is a valid input meaning "use the default", so validating first makes no-argument calls abort with the wrong message and breaks the `arg-` tests (e.g. `test-arg-ds.dataFrameSort.R:24` expects the server-side `There are some DataSHIELD errors` message). This is exactly why the two steps are worth keeping in one helper rather than as two calls at ~40 sites.
+
+A purer alternative, deliberately not taken: put the default in the signature (`newobj="dataframesort.newobj"`) so the helper only validates. It changes behaviour for an explicit `newobj=NULL` (abort instead of default) and diverges from the NULL idiom used everywhere else — evaluate as its own decision.

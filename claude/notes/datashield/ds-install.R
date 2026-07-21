@@ -13,8 +13,8 @@
 # Match the build to the client BRANCH, not just the major version (see note §0).
 #
 # Env overrides:
-#   OPAL_URL  default http://localhost:8080/
-#   ARMA_URL  default http://localhost:8081/
+#   OPAL_URL  default http://localhost:8081/
+#   ARMA_URL  default http://localhost:8080/
 #   ARMA_USER/ARMA_PASS  default admin/admin
 #   OPAL_USER/OPAL_PASS  default administrator/datashield_test&
 
@@ -27,8 +27,8 @@ src     <- args[[2]]
 is_tar  <- grepl("\\.tar\\.gz$", src)
 if (is_tar) src <- path.expand(src)
 
-opal_url <- Sys.getenv("OPAL_URL", "http://localhost:8080/")
-arma_url <- Sys.getenv("ARMA_URL", "http://localhost:8081/")
+opal_url <- Sys.getenv("OPAL_URL", "http://localhost:8081/")
+arma_url <- Sys.getenv("ARMA_URL", "http://localhost:8080/")
 
 if (backend == "armadillo") {
   if (!is_tar) stop("Armadillo install needs a local tarball, not a github ref.", call. = FALSE)

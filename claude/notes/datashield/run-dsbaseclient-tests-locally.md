@@ -17,12 +17,12 @@ time. First arg is always `opal|armadillo`.
 
 ```bash
 # Install the matching dsBase on a backend (tarball, or github ref for Opal):
-Rscript ~/.claude/notes/datashield/ds-install.R armadillo ~/git-repos/ds-core/dsBaseClient/dsBase_6.3.6.9000.tar.gz
-Rscript ~/.claude/notes/datashield/ds-install.R opal      refactor/perf-batch-3
+Rscript ~/dotfiles/claude/notes/datashield/ds-install.R armadillo ~/git-repos/ds-core/dsBaseClient/dsBase_6.3.6.9000.tar.gz
+Rscript ~/dotfiles/claude/notes/datashield/ds-install.R opal      refactor/perf-batch-3
 
 # Run a test file (writes local_settings.csv in the right form, sets the driver, runs):
-Rscript ~/.claude/notes/datashield/ds-run-tests.R armadillo smk-ds.standardiseDf
-Rscript ~/.claude/notes/datashield/ds-run-tests.R opal      smk-ds.var
+Rscript ~/dotfiles/claude/notes/datashield/ds-run-tests.R armadillo smk-ds.standardiseDf
+Rscript ~/dotfiles/claude/notes/datashield/ds-run-tests.R opal      smk-ds.var
 ```
 `ds-run-tests.R` auto-detects whether the branch wants a full-URL or bare-host
 `local_settings.csv` and writes accordingly. It does NOT install dsBase or edit
@@ -67,39 +67,35 @@ the v7.0 tarball. While the client is on a batch branch whose dsBase counterpart
 `refactor/perf-batch-3` (or merge that dsBase PR into `v7.0-dev`).
 
 ## 1. Start a server (just one is fine)
-Launcher lives in the armadillo repo's benchmark dir. `$ARMA` = your checkout
-(`~/git-repos/ds-molgenis/molgenis-service-armadillo` or `.../molgenis/...`).
-```bash
-# Armadillo only (released jar), on 8080 -- matches login_details.R (see §4):
-ARMADILLO_VERSION=5.12.2 ARMA_LOCAL_PORT=8080 ARMA_USER=admin ARMA_PASS=admin \
-  bash "$ARMA/scripts/benchmark/run_local_armadillo.sh"
-# Opal only:  docker compose -f "$ARMA/scripts/benchmark/opal/docker-compose.yml" up -d
-# Both:       bash "$ARMA/scripts/benchmark/start_servers.sh"   (reads that dir's .env)
-```
-The jar uses basic auth so it runs sandboxed (no gradlew OIDC-boot dance — see launch
-note). Health: `curl -s localhost:8080/actuator/health` → `{"status":"UP"}`.
+**See `launch-datashield-servers-sandbox.md`**, which points at the real source of
+truth: `scripts/benchmark/README.md` in the armadillo repo. Launch commands are not
+repeated here. Note the branch caveat in that note — until the scripts merge to master
+(expected week of 2026-07-20) they only exist on the `scripts-benchmark` branch.
+
+All this section needs from it: **Armadillo on `:8080`** (which is what `login_details.R`
+hardcodes, see §4) and **Opal on `:8081`**.
 
 ## 2. Install dsBase on the server
 
 ### Armadillo (REST via MolgenisArmadillo) — use `armadillo.install_packages()`
 ```r
 library(MolgenisArmadillo)
-armadillo.login_basic("http://localhost:8081", "admin", "admin")
+armadillo.login_basic("http://localhost:8080", "admin", "admin")
 armadillo.install_packages(
   paths   = "~/git-repos/ds-core/dsBaseClient/dsBase_7.0.0-permissive.tar.gz",
   profile = "default")
 ```
 Then whitelist it (no R wrapper; hit the endpoint as CI does):
 ```bash
-curl -s -u admin:admin -X POST http://localhost:8081/whitelist/dsBase   # -> HTTP 204
-curl -s -u admin:admin http://localhost:8081/whitelist                  # -> [...,"dsBase",...]
+curl -s -u admin:admin -X POST http://localhost:8080/whitelist/dsBase   # -> HTTP 204
+curl -s -u admin:admin http://localhost:8080/whitelist                  # -> [...,"dsBase",...]
 ```
 (If the package doesn't take effect, restart the rock/profile container.)
 
 ### Opal (opalr) — install from GitHub ref or a local tarball
 ```r
 library(opalr)
-opal <- opal.login("administrator", "datashield_test&", url = "http://localhost:8080/")
+opal <- opal.login("administrator", "datashield_test&", url = "http://localhost:8081/")
 # Use the ref that MATCHES the client branch (see §0) — e.g. for perf-batch-3:
 dsadmin.install_github_package(opal, "dsBase", username = "datashield", ref = "refactor/perf-batch-3")
 dsadmin.profile_init(opal, name = "default", packages = c("dsBase","dsTidyverse","resourcer"))
@@ -134,12 +130,12 @@ Two knobs in `tests/testthat/connection_to_datasets/`:
   `init.ip.address()` (e.g. `refactor/perf-batch-3`) reads it as a BARE HOST that
   `login_details.R` wraps with `paste0("http://", <this>, ":8080")` — a full URL mangles to
   `http://http://...:8080` → "Resource assignment failed". `init.server.url()` (e.g.
-  `v6.3.6-dev-feat/standardise-df`) reads it as the FULL URL (`http://localhost:8081/`
-  Armadillo, `http://localhost:8080/` Opal).
-- **Port**: `login_details.R` hardcodes Armadillo on `:8080`.
-  - Cleanest: run Armadillo on **8080** (stop Opal) → no edit needed.
-  - Coexisting with Opal: Armadillo is on **8081**, so temporarily change the four
-    `:8080` → `:8081` in the ArmadilloDriver block; revert before committing.
+  `v6.3.6-dev-feat/standardise-df`) reads it as the FULL URL (`http://localhost:8080/`
+  Armadillo, `http://localhost:8081/` Opal).
+- **Port**: `login_details.R` hardcodes Armadillo on `:8080`, which is exactly where the
+  benchmark launcher puts it — so no edit is needed, and Opal (on `:8081`) can co-run.
+  Only if you deliberately move Armadillo off 8080 do you need to change the four
+  `:8080` occurrences in the ArmadilloDriver block; revert before committing.
 
 Driver is forced from the runner via `options(default_driver = "ArmadilloDriver")`
 (or `"OpalDriver"`), which overrides the default in `login_details.R`.
@@ -158,13 +154,22 @@ Only once the targeted files are green, run everything:
 devtools::test(pkg = "~/git-repos/ds-core/dsBaseClient")
 ```
 
+**The full-suite run is MANDATORY before calling a branch green — touched-file runs
+are not sufficient.** Refactors break cross-file CONSUMERS: other test files that
+call a refactored function in their setup and assert on its (now changed) return
+value. Real case: batch-4 dropped MODULE 5 from `ds.dataFrameSubset` and updated
+`test-smk-ds.dataFrameSubset.R` in the same commit, but `test-smk-ds.table.R`
+calls `ds.dataFrameSubset` in its setup and still asserted on the removed return
+list — only CI's full suite caught it. A quicker pre-check:
+`grep -rl <refactored-fn> tests/testthat/*.R` and run every file that hits.
+
 **Always validate against BOTH Armadillo and Opal.** CI runs the suite on each
 backend and they diverge (different drivers, disclosure defaults, object-loading
 paths — an Armadillo pass is not an Opal pass and vice versa). Run the same filter
 against each and reconcile before calling a branch green:
 ```bash
-Rscript ~/.claude/notes/datashield/ds-run-tests.R armadillo <filter>
-Rscript ~/.claude/notes/datashield/ds-run-tests.R opal      <filter>
+Rscript ~/dotfiles/claude/notes/datashield/ds-run-tests.R armadillo <filter>
+Rscript ~/dotfiles/claude/notes/datashield/ds-run-tests.R opal      <filter>
 ```
 Each needs the matching dsBase installed (§0/§2) and its own test data uploaded (§3).
 
@@ -195,6 +200,24 @@ CI result locally, match its filter + options, not an ad-hoc file list.
   `devtools::test()` defaults to `TESTTHAT_MAX_FAILS=10` and WILL terminate early — set
   `Sys.setenv(TESTTHAT_MAX_FAILS="999999")` and pass `stop_on_failure = FALSE`, or a
   handful of failures aborts the run and later files never execute.
+  `ds-run-tests.R` now sets all three itself. This matters more than it sounds: the
+  ~52 `perf-` failures below land EARLY in the alphabet, so without this a full run
+  dies around `perf-` and never reaches `smk-`, while still printing a summary that
+  looks like a real result.
+- **`perf-` tests need `PERF_PROFILE`, and are meaningless locally.** `perf_tests/perf_rate.R`
+  builds `perf_files/<driver>_<tolower(PERF_PROFILE)>_perf-profile.csv`. CI passes
+  `PERF_PROFILE` (`env PERF_PROFILE=$PERF_PROFILE`); with it unset the platform falls back
+  to `default`, `armadillo_default_perf-profile.csv` doesn't exist, and EVERY `perf-` file
+  errors at load with `cannot open the connection` — before any DataSHIELD call, so it is
+  never a real regression. The only value that resolves for Armadillo is
+  `PERF_PROFILE=azure-pipeline`; Opal also has `hp-laptop-quay`. Even then the reference
+  rates are Azure-calibrated, so pass/fail on a laptop is noise — treat `perf-` results as
+  uninformative locally and say so explicitly rather than reporting them as failures.
+  Two shipped profiles can NEVER load, whatever you set — `armadillo_hp-laptop-quay_pipeline-perf.csv`
+  and `unknown_default-perf-profile.csv` use a postfix the code never builds.
+- **`test-arg-ds.foobar.R` fails on fancy quotes.** It matches an R error string containing
+  `'dsIsAsync'`; under a UTF-8 locale R emits `‘dsIsAsync’` and the `fixed=TRUE` match fails.
+  Locale artifact, not a code failure.
 - **dsBase build.** Armadillo GHA installs `dsBase_7.0.0-permissive.tar.gz` (prebuilt);
   Opal Azure installs from github (`ref='v7.0-dev'`) then
   `dsadmin.set_option(opal,'default.datashield.privacyControlLevel','permissive')` — the
@@ -217,7 +240,14 @@ CI result locally, match its filter + options, not an ad-hoc file list.
   pick a dsBase version, and `:latest` floats — local servers drift (seen: 6.3.5 →
   7.0.0.9000 → 6.3.6.9000 on the same Opal). To pin a version, change the rock image
   tag or — the reliable way — install at runtime (§2).
-- **Local Opal is http on :8080** (no `:8443` TLS); the harness Opal default is
+- **Two stacks, opposite Opal ports — check which one you started.** The armadillo repo's
+  benchmark launcher (`scripts/benchmark/`, §1) puts **Armadillo on 8080, Opal on 8081**,
+  and both can run at once. dsBaseClient's own `docker-compose_opal.yml` instead serves
+  **Opal on 8080** and is never co-run with Armadillo. Installing against the wrong port
+  silently targets the other instance. Verify before installing:
+  `curl -s -u admin:admin localhost:<port>/actuator/info` — Armadillo answers with
+  `molgenis-armadillo` build JSON, Opal 404s.
+- Local Opal is plain http (no `:8443` TLS); the harness Opal default is
   `https://localhost:8443/`, so override via `local_settings.csv`.
 - **Do NOT create git worktrees** to run a branch's tests. A worktree holds the branch
   checked out, so the user can't check it out / pull it in their own working dir and ends
