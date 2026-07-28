@@ -92,3 +92,52 @@ local SuperLink whenever you install new deps or edit `~/.flwr/config.toml`.**
    (Gotcha 2: stale daemon on 39093 → `pkill -f flower-superlink`)
 3. `~/.flwr/local-superlink/superlink.log` — only StreamLogs polls = not
    executing; real app errors stream to the CLI, not this file.
+
+## Publishing & reviewing apps on Flower Hub
+
+Docs: <https://flower.ai/docs/hub/how-to-publish-app-on-hub.html> ·
+<https://flower.ai/docs/hub/how-to-sign-hub-apps.html> (fetched 2026-07-21).
+
+### Publish
+`pyproject.toml` requirements:
+- `[project]`: `name` (starts with a letter; letters/digits/hyphens only),
+  `version`, `description`, `license`.
+- `[tool.flwr.app]`: `publisher` = your Flower **account username** (must match
+  exactly); `fab-format-version = 1`; `flwr-version-target` (required when
+  `fab-format-version = 1`).
+- App must run in BOTH simulation and deployment unchanged (branch on
+  `"partition-id" in context.node_config`).
+
+Steps:
+1. Create a Flower account at flower.ai — **username must equal `publisher`**.
+   (Org publishing not yet official: make a user account named after the org.)
+2. `pip install flwr`
+3. `flwr login supergrid` — browser auth; needs the `superlink.supergrid`
+   connection (`supergrid.flower.ai`, present by default in `~/.flwr/config.toml`).
+4. `flwr app publish <app-path>` — uploads **source + metadata, NOT a prebuilt
+   FAB**; the Hub builds the FAB server-side (so deps must be pip-resolvable).
+   App lands at `flower.ai/apps/<account>/<app>/`.
+5. New version = bump `version` (semver) and re-run `flwr app publish`. Versions
+   are kept side by side. **Published apps cannot be removed.**
+
+Upload limits: allowed `*.py/.toml/.md/.yaml/.yml/.json/.jsonl` + `.gitignore`/
+`.editorconfig`/`LICENSE`; excludes `.flwr/**` and `__pycache__`; ≤1000 files,
+≤1 MB/file, ≤10 MB total; symlinks not followed; >10 dirs deep excluded.
+
+### Review / sign (trust)
+A reviewer signs an app so consumers can decide to trust it.
+1. Reviewer generates an Ed25519 OpenSSH key and registers the **public** key in
+   their Flower account profile:
+   `ssh-keygen -t ed25519 -f hub_signing_key -C "hub-review-key"`
+2. `flwr login supergrid`
+3. `flwr app review @account/app==x.y.z` — downloads the FAB, unpacks it for
+   manual inspection, prompts you to type `SIGN`, asks for the Ed25519 **private**
+   key path, and submits the signature.
+4. Signature appears in the app's **Verifications** section on its Hub page;
+   consumers check that section to see who signed and decide trust.
+
+Trust-model note: the Hub docs frame trust as advisory signatures ("check the
+Verifications section, decide whom you trust") — they do NOT document a
+supernode `--trusted-entities` flag or hard FAB-verification reject. That
+enforcement lives on the **deployment/supernode** side (stock 1.32.1 e2e work),
+separate from Hub signing — see [[flower-hub-migration-workflow]].
