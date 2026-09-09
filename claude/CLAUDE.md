@@ -6,12 +6,14 @@
 - Always explain code changes before making them
 - Do not hack or add workarounds. Only make principled changes based on adequate understanding of the problem. When something breaks, trace the root cause before attempting fixes.
 - Do not make decisions without asking for confirmation first. Stop and understand the problem fully before suggesting or implementing anything.
+- When you take a position, defend it or concede with a stated reason — don't flip just because the user pushed back. Disagree plainly when you disagree.
 - "Review"/"check"/"look at" means read-only: report findings and stop. Do not edit, fix, or apply anything unless the user explicitly asks you to (e.g. "fix", "apply", "implement", "make the changes") — regardless of how small or low-risk the change looks. Often this is someone else's PR/code being reviewed for manual annotation on GitHub, not a change to push.
 - Do not create new files unless explicitly asked to.
 - Never run destructive commands (rm, remove.packages, etc.) without explicit permission. Suggest the command and let the user run it.
 - Do not make minor whitespace changes (trailing spaces, blank lines, etc.) when editing files. Only change what is necessary for the task.
 - Do not add comments to files (code, tests, config, etc.) unless explicitly asked to.
 - Do not present speculation as fact. If you don't have evidence for a claim, say so or don't make the claim.
+- Be concise by default — hard limit, not aspirational: explanations, summaries, and status updates get 2-4 sentences unless I explicitly ask for depth or it's a first-time deep-dive I requested by name. Applies to authored content too (slides, docs, PR descriptions, code comments), not just chat replies. One caveat sentence max, only if load-bearing.
 - All Claude preferences live in this dotfiles repo (`~/dotfiles/claude/`); `~/.claude/*` are symlinks to it. Always edit the dotfiles source — never write `~/.claude/CLAUDE.md` or `~/.claude/settings.json` directly.
 
 ## PR summaries

@@ -64,6 +64,7 @@
       "Bash(gh secret delete:*)",
       "Bash(git commit:*)",
       "Bash(git push:*)",
+      "Bash(git revert:*)",
       "Bash(git push --force:*)",
       "Bash(git reset --hard:*)",
       "Bash(git clean:*)",
@@ -81,7 +82,9 @@
       "Read(**/*.pem)",
       "Read(**/*credentials*)",
       "Read(~/.ssh/**)",
-      "Read(~/.aws/**)"
+      "Read(~/.aws/**)",
+      "Read(~/Downloads/historiaclnicadatososibilbaobasurto/**)",
+      "Read(~/data/teleconsultas/real/**)"
     ],
     "ask": [
       "Bash(npm publish:*)",
@@ -102,7 +105,7 @@
       "Bash(gh run rerun:*)",
       "Bash(gh workflow run:*)"
     ],
-    "defaultMode": "default",
+    "defaultMode": "auto",
     "additionalDirectories": [
       "~/git-repos"
     ]
@@ -115,7 +118,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "jq -r '.tool_input.command // \"\"' | grep -Eq '(^|[^[:alnum:]_])git[[:space:]]+([^[:space:]]+[[:space:]]+)*(commit|push)([[:space:]]|$)' && jq -n '{hookSpecificOutput:{hookEventName:\"PreToolUse\",permissionDecision:\"deny\",permissionDecisionReason:\"Blocked by local hook: git commit/push is prohibited here. Ask the user to run it themselves.\"}}' || true"
+            "command": "jq -r '.tool_input.command // \"\"' | grep -Eq '(^|[^[:alnum:]_])git[[:space:]]+([^[:space:]]+[[:space:]]+)*(commit|push|revert)([[:space:]]|$)' && jq -n '{hookSpecificOutput:{hookEventName:\"PreToolUse\",permissionDecision:\"deny\",permissionDecisionReason:\"Blocked by local hook: git commit/push/revert is prohibited here. Ask the user to run it themselves.\"}}' || true"
           },
           {
             "type": "command",
@@ -188,14 +191,18 @@
     "filesystem": {
       "allowWrite": [
         "~/.gradle",
-        "~/.npm"
+        "~/.npm",
+        "~/data/teleconsultas/synthetic",
+        "~/data/teleconsultas/profiles"
       ],
       "denyRead": [
         "~/.ssh",
         "~/.aws",
         "~/.config/gcloud",
         "~/.Renviron",
-        "~/.netrc"
+        "~/.netrc",
+        "~/Downloads/historiaclnicadatososibilbaobasurto",
+        "~/data/teleconsultas/real"
       ],
       "allowRead": [
         "~/git-repos/molgenis/molgenis-service-armadillo/scripts/benchmark/.env",
