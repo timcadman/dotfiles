@@ -11,10 +11,45 @@
 - Do not create new files unless explicitly asked to.
 - Never run destructive commands (rm, remove.packages, etc.) without explicit permission. Suggest the command and let the user run it.
 - Do not make minor whitespace changes (trailing spaces, blank lines, etc.) when editing files. Only change what is necessary for the task.
-- Do not add comments to files (code, tests, config, etc.) unless explicitly asked to.
+- Do not add comments to files (code, tests, config, etc.) unless explicitly asked to, or the project's own convention is to have them — see "Code standards" below for how to write them when they are wanted.
 - Do not present speculation as fact. If you don't have evidence for a claim, say so or don't make the claim.
 - Be concise by default — hard limit, not aspirational: explanations, summaries, and status updates get 2-4 sentences unless I explicitly ask for depth or it's a first-time deep-dive I requested by name. Applies to authored content too (slides, docs, PR descriptions, code comments), not just chat replies. One caveat sentence max, only if load-bearing.
 - All Claude preferences live in this dotfiles repo (`~/dotfiles/claude/`); `~/.claude/*` are symlinks to it. Always edit the dotfiles source — never write `~/.claude/CLAUDE.md` or `~/.claude/settings.json` directly.
+
+## Code standards (all languages)
+
+These are limits, not aspirations. Where a number is given, treat exceeding
+it as requiring a stated reason in the response — not as a soft target.
+
+- **One function, one job.** Max ~30 lines. Past that, either decompose
+  into named helpers with a thin orchestrator, or say in the response why
+  it is genuinely one job. Flat declarative blocks (one field or case per
+  line — a long recode, a field-by-field reconciliation) are exempt:
+  splitting those makes them worse.
+- **Name functions with verbs, arguments with nouns.** Plain English, no
+  programming jargon: not `canonical`, `coalesce`, `dispatch`, `util`,
+  `handle`, `process`. Predicates (`is_yes()`) are the exception. If a
+  name needs explaining, it isn't working.
+- **Comments: max 3 lines inline, 8 for a file header.** Explain why this
+  code is the way it is. Never what it does. Never how it got here —
+  superseded approaches, what the original version did, project history
+  all belong in the plan doc and commit messages, not the source. The
+  one exception is a recorded measurement (a figure that would otherwise
+  have to be re-derived by re-running against real data); give it the
+  room it needs and cite where it came from.
+- **Prefer the readable standard idiom** (in R: tidyverse) unless
+  performance at scale demands otherwise. Document the exception where it
+  is made.
+- **A refactor must be proven behaviour-preserving, not asserted.**
+  Snapshot the outputs before, diff after, and report the result. "Pure
+  restructure" is a claim requiring evidence. Where no snapshot is
+  possible, run the old implementation and the new one side by side on
+  the same input and compare.
+- **Weigh a request against the project's stated top priority before
+  implementing it.** Say plainly when it is a tangent; don't just build it.
+- **R:** always give `install.packages()` with
+  `repos = "https://cloud.r-project.org"`. If a package is missing and
+  you can't install it, ask — don't work around it silently.
 
 ## PR summaries
 
