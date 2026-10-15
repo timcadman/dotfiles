@@ -14,10 +14,15 @@ mostly already done.
 All numbers below verified directly via grep against the current `dsBaseClient` checkout,
 not estimated.
 
-## 1. Datasource-lookup boilerplate — 56 functions not yet migrated
+## 1. Datasource-lookup boilerplate — 5 functions not yet migrated
 
-`.set_datasources()` already exists in `R/utils.R` and is used by 67 functions. 56 more
-still hand-roll the pre-refactor version inline, byte-for-byte identical each time:
+Counted on `origin/v7.0-dev` @ `52c57bfa` (2026-10-13, batch 11 merged), excluding the 11
+deprecated functions listed below: `.set_datasources()` is used by 107 files. 5 still
+hand-roll the pre-refactor version inline: `ds.dmtC2S`, `ds.glmPredict`, `ds.glmSummary`,
+`ds.extractQuantiles`, `ds.testObjExists`. The last two are due for removal
+(`refactor-full-review.md` #41 and PR 5), which leaves 3 to migrate.
+
+The block being replaced:
 
 ```r
 if(is.null(datasources)){
@@ -28,25 +33,15 @@ if(!(is.list(datasources) && all(unlist(lapply(datasources, function(d) {methods
 }
 ```
 
-Confirmed present in (non-exhaustive list, ~56 total per `grep -l "datashield.connections_find()" R/ds.*.R`):
-`ds.assign`, `ds.auc`, `ds.boxPlot`, `ds.boxPlotGG*` (5 variants), `ds.bp_standards`,
-`ds.colnames`, `ds.contourPlot`, `ds.densityGrid`, `ds.exists`, `ds.dmtC2S`, `ds.elspline`,
-`ds.getWGSR`, `ds.extractQuantiles`, `ds.glmPredict`, `ds.hetcor`, `ds.histogram`,
-`ds.isValid`, `ds.heatmapPlot`, `ds.igb_standards`, `ds.lexis`,
-`ds.listServersideFunctions`, `ds.listDisclosureSettings`, `ds.look`, `ds.lspline`,
-`ds.make`, `ds.mdPattern`, `ds.message`, `ds.meanByClass`, `ds.ns`, `ds.metadata`,
-`ds.rBinom`, `ds.rNorm`, `ds.qlspline`, `ds.rowColCalc`, `ds.rm`, `ds.sample`,
-`ds.recodeLevels`, `ds.scatterPlot`, `ds.rUnif`, `ds.setSeed`, `ds.setDefaultOpals`,
-`ds.subsetByClass`, `ds.subset`, `ds.rPois`, `ds.table2D`, `ds.tapply.assign`,
-`ds.table1D`, `ds.testObjExists`, `ds.table`, `ds.vectorCalc`, `ds.tapply`, `ds.glmSummary`.
+Recount with `git grep -l 'datashield.connections_find' origin/v7.0-dev -- R`.
 
-**Exclude 11 from priority** — already on the deprecation list in `REFACTOR_GUIDE.md`:
+**Excluded (11)** — deprecated, still hand-rolled, not worth migrating ahead of removal:
 `ds.look`, `ds.meanByClass`, `ds.message`, `ds.recodeLevels`, `ds.setDefaultOpals`,
 `ds.subset`, `ds.subsetByClass`, `ds.table1D`, `ds.table2D`, `ds.vectorCalc`,
-`ds.listServersideFunctions`. Migrating these is wasted effort ahead of their removal.
+`ds.listServersideFunctions`.
 
 **Action**: pure adoption — replace the 6-line block with `datasources <- .set_datasources(datasources)`
-in each of the remaining ~45 functions. No new helper design needed.
+in `ds.dmtC2S`, `ds.glmPredict`, `ds.glmSummary`. No new helper design needed.
 
 ## 2. `newobj` default-and-validate — helper exists, used by 1 of ~46+ candidates
 

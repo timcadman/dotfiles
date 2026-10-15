@@ -13,7 +13,7 @@
 - Do not make minor whitespace changes (trailing spaces, blank lines, etc.) when editing files. Only change what is necessary for the task.
 - Do not add comments to files (code, tests, config, etc.) unless explicitly asked to, or the project's own convention is to have them — see "Code standards" below for how to write them when they are wanted.
 - Do not present speculation as fact. If you don't have evidence for a claim, say so or don't make the claim.
-- Be concise by default — hard limit, not aspirational: explanations, summaries, and status updates get 2-4 sentences unless I explicitly ask for depth or it's a first-time deep-dive I requested by name. Applies to authored content too (slides, docs, PR descriptions, code comments), not just chat replies. One caveat sentence max, only if load-bearing.
+- Response length is governed by the `Concise` output style (`outputStyle` in `settings.json`). It applies to authored content too — slides, docs, PR descriptions, code comments — not just chat replies.
 - All Claude preferences live in this dotfiles repo (`~/dotfiles/claude/`); `~/.claude/*` are symlinks to it. Always edit the dotfiles source — never write `~/.claude/CLAUDE.md` or `~/.claude/settings.json` directly.
 
 ## Code standards (all languages)
@@ -26,6 +26,11 @@ it as requiring a stated reason in the response — not as a soft target.
   it is genuinely one job. Flat declarative blocks (one field or case per
   line — a long recode, a field-by-field reconciliation) are exempt:
   splitting those makes them worse.
+- **A function's purpose must be guessable from its name and signature
+  alone — the "cover the body" test.** Read only the name and parameters;
+  if you can't state in one sentence what it does and returns, rename it
+  or split it. If that sentence needs "and" more than once, it's not one
+  job — see the line-count rule above.
 - **Name functions with verbs, arguments with nouns.** Plain English, no
   programming jargon: not `canonical`, `coalesce`, `dispatch`, `util`,
   `handle`, `process`. Predicates (`is_yes()`) are the exception. If a

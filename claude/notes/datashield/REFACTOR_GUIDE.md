@@ -127,7 +127,7 @@ When adding a parameter to an already-released function (e.g. `classConsistencyC
 
 **Client-side performance tests** (new `test-perf-ds.functionName.R` in dsBaseClient):
 - Add a performance test for each refactored client function. Follow the pattern in `test-perf-ds.class.R`: call the function in a timed loop, compare against a reference rate from the perf profile CSV.
-- Run with `PERF_DURATION_SEC=2 devtools::test(filter = "perf-")` during development; the default 30-second duration is for CI.
+- Run with `PERF_DURATION_SEC=2 devtools::test(filter = "perf-")` during development; the default 30-second duration is for CI. Always actually run each new/modified perf test against a live backend at this reduced duration before considering it done — batch-10's perf tests for elspline/lspline/ns/qlspline/table all shipped with wrong column names or a missing `connect.studies.dataset.*()` call that only surfaced when executed, not on review.
 - **Do not** include Arjuna Technologies copyright headers in new test files. The existing headers in pre-refactor files should be left as-is, but new files we create should not carry third-party copyright.
 - **The perf test must replicate the smoke test.** Before writing a perf test, read the corresponding `test-smk-ds.functionName.R` and copy:
   1. The `connect.studies.dataset.*()` line (same dataset, same columns)
@@ -208,7 +208,7 @@ Return results to client, no server-side assignment.
 | ds.levels | levelsDS | factor |
 | ds.unique | uniqueDS | * |
 
-**Deferred from Batch 2:** ds.isValid / isValidDS — `isValidDS` is used as an internal disclosure-control helper by `replaceNaDS` (Batch 4), `quantileMeanDS` (Batch 3), and `rowColCalcDS` (Batch 10), all passing objects directly. Cannot change `isValidDS` signature until those callers are refactored. Refactor ds.isValid/isValidDS when the last internal caller is refactored (see Batch 10 notes).
+**Deferred from Batch 2 — DONE in Batch 10:** ds.isValid / isValidDS. `isValidDS(x)` now takes a name, runs `.checkClass`, and returns `list(valid, class)`; `ds.isValid` has `classConsistencyCheck=TRUE`. The size check itself lives in the internal `.checkDisclosureSize(obj)` (in `isValidDS.R`), which server functions that already hold the object call directly: `replaceNaDS`, `quantileMeanDS`, `recodeLevelsDS`, `rowColCalcDS`. `ds.summary` calls `isValidDS` by name and reads `$valid`.
 
 **Batch 2 sub-patterns:**
 - **Standard eval(parse()) functions (classDS, dimDS, lengthDS, namesDS, lsDS, completeCasesDS, uniqueDS):** Server uses `eval(parse(text=x), envir=parent.frame())` — replace with `.loadServersideObject()`
@@ -314,7 +314,7 @@ Most complex. Multiple server calls, complex validation logic.
 | ds.boxPlot | (check server) |
 | ds.boxPlotGG | boxPlotGGDS |
 
-**Batch 9 note:** `ds.heatmapPlot`, `ds.contourPlot`, and `ds.densityGrid` call `rangeDS` which has **not** been refactored. These calls still use `as.symbol(paste0("rangeDS(", x, ")"))`. Once `rangeDS` is refactored (batch 10 or later), go back and update these three client functions to use `call("rangeDS", x=x)`.
+**Batch 9 note — DONE in Batch 10:** `rangeDS(x)` is refactored (Pattern B, numeric/integer `.checkClass`) and `ds.heatmapPlot`, `ds.contourPlot`, `ds.densityGrid` now dispatch `call("rangeDS", x)`.
 
 ### Batch 10 — Splines, Tables, Misc (14 pairs)
 
@@ -335,7 +335,7 @@ Most complex. Multiple server calls, complex validation logic.
 | ds.lexis | lexisDS1/DS2/DS3 |
 | ds.hetcor | hetcorDS |
 
-**Batch 10 dependency:** `rowColCalcDS` calls `isValidDS(result)` internally as a disclosure check. When refactoring `rowColCalcDS`, replace this with direct disclosure logic or `.loadServersideObject()` + `.checkClass()`. Once done, also refactor `ds.isValid` / `isValidDS` (deferred from Batch 2). Similarly, `replaceNaDS` (Batch 4) and `quantileMeanDS` (Batch 3) call `isValidDS()` internally — refactor those callers first before changing `isValidDS`'s signature.
+**Batch 10 dependency — DONE:** see "Deferred from Batch 2" above. Batch 10 also moved `ds.rowColCalc`'s per-study numeric-column check into `rowColCalcDS`, and replaced the `eval(parse())` of `exclude` values in `tableDS`/`tableDS.assign` with string splitting (`"NA"` → `NA`).
 
 ## Known Issues
 
@@ -347,7 +347,7 @@ Most complex. Multiple server calls, complex validation logic.
 
 **Batch 8:** `ds.sample` smoke test fails at the `ds.length("newobj.sample")` call — this is because the batch-2 client PR has not been merged to v7.0-dev yet, so the old `ds.length` client code cannot handle the new `list(length=..., class=...)` return from the refactored `lengthDS`.
 
-**Batch 9:** `rangeDS` has not been refactored, so `ds.heatmapPlot`, `ds.contourPlot`, and `ds.densityGrid` still use `as.symbol(paste0("rangeDS(", x, ")"))` for `rangeDS` calls. Once `rangeDS` is refactored, update these to use `call("rangeDS", x=x)`.
+**Batch 9:** resolved in Batch 10 (`rangeDS` refactored).
 
 ## Per-Batch Workflow
 

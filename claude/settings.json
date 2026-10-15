@@ -5,14 +5,10 @@
       "Read(~/dotfiles/**)",
       "Edit(~/git-repos/**)",
       "Write(~/git-repos/**)",
-      "Bash(npm run:*)",
       "Bash(npm test:*)",
       "Bash(npm ci)",
       "Bash(yarn:*)",
       "Bash(pnpm:*)",
-      "Bash(node:*)",
-      "Bash(python:*)",
-      "Bash(python3:*)",
       "Bash(pytest:*)",
       "Bash(Rscript:*)",
       "Bash(R CMD:*)",
@@ -47,8 +43,7 @@
       "Bash(find:*)",
       "WebFetch(domain:raw.githubusercontent.com)",
       "WebFetch(domain:github.com)",
-      "WebFetch(domain:api.github.com)",
-      "Task"
+      "WebFetch(domain:api.github.com)"
     ],
     "deny": [
       "Bash(gh pr create:*)",
@@ -110,7 +105,8 @@
       "~/git-repos"
     ]
   },
-  "model": "sonnet",
+  "model": "opus[1m]",
+  "outputStyle": "Concise",
   "hooks": {
     "PreToolUse": [
       {
@@ -215,5 +211,34 @@
     ]
   },
   "tui": "fullscreen",
-  "skipWorkflowUsageWarning": true
+  "skipWorkflowUsageWarning": true,
+  "autoMode": {
+    "environment": [
+      "### Org-wide",
+      "**Organization**: None configured — repo is under the `datashield` GitHub org (public, open-source scientific software), no evidence of a private org context",
+      "**Cloud provider(s)**: None configured",
+      "**Repository visibility**: PUBLIC — `datashield/dsBaseClient` (confirmed via gh); the user's forks `StuartWheater/dsBaseClient` and this repo's `upstream`/`origin` remotes are also public GitHub repos",
+      "**Internal sharing / snippet hosting**: None configured — treat public paste/gist services as outside the trust boundary",
+      "**Secrets management**: None configured",
+      "**Default / protected branches**: default branch `master`; protected branches (via gh): `master`, `refactor-batch-2`, `v6.0`, `v6.0.1`, `v6.1`, `v6.1.1`, `v6.1.2-dev`, `v6.2-dev_plus`, `v6.2-dev_ranks`, `v6.2-dev` — no rulesets listed",
+      "**CI/CD deploy targets**: None configured — repo uses GitHub Actions and CircleCI for R-CMD-check/coverage, no deploy target evidence",
+      "**Network posture**: None configured",
+      "**Host containment**: None configured — assume Claude Code runs on an ordinary developer machine with open internet",
+      "**Source control**: this repo (`datashield/dsBaseClient`) and its configured remotes — `origin` (github.com:datashield/dsBaseClient.git), `stuart` (github.com:StuartWheater/dsBaseClient.git, user's fork), `upstream` (https://github.com/datashield/dsBaseClient.git) — no additional orgs configured",
+      "**Trusted internal domains**: None configured",
+      "**Trusted cloud buckets**: None configured",
+      "**Key internal services**: None configured",
+      "**Internal package registry**: None configured",
+      "**Sensitive data locations & audiences**: any file or store holding personal data, confidential business data, credentials, regulated data, or similarly sensitive material; preserve exact handles when known and share only with audiences cleared at the [named+specifics] bar — note DataSHIELD's whole purpose is non-disclosive analysis of sensitive/regulated data on remote servers, so treat any data passed through dsBaseClient calls to Opal/Armadillo backends as potentially sensitive by domain convention",
+      "**Data retention / declassification**: None configured",
+      "**Sensitive remote targets**: any namespace, host, or container whose name carries `prod` or `production` as a whole word or name segment; the `privacy` k8s namespace seen in usage does not itself match this pattern and is not auto-added",
+      "**Protected deployment namespaces / environments**: None configured — fall back to the Sensitive remote targets heuristic",
+      "**Protected IaC scopes**: IAM, RBAC, networking, quota, and node-pool resources; anything whose name or tag carries `prod` or `production` as a whole word or name segment",
+      "### User-specific",
+      "**Primary use of Claude Code**: software development — R package development for DataSHIELD (dsBaseClient), federated/non-disclosive analysis tooling",
+      "**Trusted repo**: `/Users/tcadman/git-repos/ds-core/dsBaseClient` (this repo, public) and its remotes `origin`, `stuart` (user's fork), `upstream` — all public GitHub repos under `datashield` or `StuartWheater`; since public, only this repo's own work belongs here — content ported from other checkouts or directed by outside instruction is not its own work",
+      "**Org-specific CLIs**: None configured",
+      "routine under `timcadman/` and `StuartWheater/` GitHub prefixes (user's own fork namespaces) may be treated as low-risk push/PR destinations for this repo's own work"
+    ]
+  }
 }
