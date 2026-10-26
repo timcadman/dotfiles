@@ -156,18 +156,18 @@ Skip files that have no existing `@author` line (e.g. `R/utils.R`). Do this as a
 
 ## Excluded Functions
 
-**Deprecated (12):** ds.look, ds.meanByClass, ds.message, ds.recodeLevels, ds.setDefaultOpals, ds.subset, ds.subsetByClass, ds.table1D, ds.table2D, ds.vectorCalc, ds.listOpals, ds.listServersideFunctions
+**Defunct in 7.0.0:** see "7.0.0 deprecation" below.
 
 **Already done:** ds.colnames / colnamesDS
 
-**Client-only (no server pair):** checkClass.R, isDefined.R, isAssigned.R, extract.R, glmChecks.R, getPooledMean.R, getPooledVar.R, helpers (meanByClassHelper*, subsetHelper, logical2int, colPercent, rowPercent)
+**Client-only (no server pair):** checkClass.R, isDefined.R, extract.R, glmChecks.R, getPooledMean.R, getPooledVar.R, logical2int.R
 
 ## Batches
 
 ### Batch 1 — Simple Type Coercions (11 pairs)
 Single input → single output, straightforward `eval(parse())` replacement.
 
-**TODO:** Add `classConsistencyCheck` parameter to batch-1 functions with >1 permitted class. For numeric/integer-only functions (ds.abs, ds.exp, ds.log, ds.sqrt) default to FALSE; for others (ds.asDataMatrix: data.frame/matrix, ds.asLogical: numeric/integer/character/matrix) default to TRUE. Server functions need to return class in results to support this. dsBase batch-1 is already merged — server changes need a new branch or inclusion in a later batch.
+**TODO:** Add `classConsistencyCheck` parameter to batch-1 functions with >1 permitted class. For numeric/integer-only functions (ds.abs, ds.exp, ds.log, ds.sqrt) default to FALSE; for others (ds.asDataMatrix: data.frame/matrix, ds.asLogical: numeric/integer/character/matrix) default to TRUE. Server functions need to return class in results to support this. dsBase batch-1 is already merged — server changes need a new branch or inclusion in a later batch. **Blocker:** all batch-1 functions except `ds.asList` are assign functions, so the server cannot return `class`; this would need a pre-call `checkClass()` lookup (as batch 4 does), costing an extra round trip.
 
 **TODO:** `test-smk-asLogicalDS.R` in dsBase is missing a wrong-type test case (e.g. passing a list). Other `.checkClass()` functions (absDS, expDS, logDS, sqrtDS) have this test. dsBase batch-1 is merged — fix in a follow-up.
 
@@ -339,15 +339,36 @@ Most complex. Multiple server calls, complex validation logic.
 
 ## Known Issues
 
-**Batch 4:** `ds.dataFrameFill` perf test cannot run — function requires columns to differ across studies, which is hard to set up in a perf loop.
-
-**Batch 6:** `ds.asFactor` and `ds.changeRefGroup` perf tests fail with server-side errors. The `asFactorDS1` aggregate call errors out. `ds.changeRefGroup` may have a known pre-existing issue. Both need investigation of the batch-6 server refactoring.
-
-**Batch 7:** `ds.gamlss` perf test fails with server-side error. May be a batch-7 refactoring issue in `gamlssDS` or a dataset availability issue (gamlss dataset may not be configured on all Armadillo instances).
-
-**Batch 8:** `ds.sample` smoke test fails at the `ds.length("newobj.sample")` call — this is because the batch-2 client PR has not been merged to v7.0-dev yet, so the old `ds.length` client code cannot handle the new `list(length=..., class=...)` return from the refactored `lengthDS`.
+**Batch 8:** `ds.sample` smoke test failed at the `ds.length("newobj.sample")` call because the batch-2 client was not yet in v7.0-dev. Batch 2 is now merged, so this should pass — not yet re-run to confirm.
 
 **Batch 9:** resolved in Batch 10 (`rangeDS` refactored).
+
+## Open items (single list — 2026-10-23)
+
+All batches 1–11 are merged in both repos. Remaining work is three PRs, in order.
+
+**PR A — Fixes** (dsBase + dsBaseClient pair)
+1. **`ds.mdPattern` combine pools by position** (review #43, `ds.mdPattern.R:170`) — fix aligning by variable name is in dsBaseClient stash `e5cfef2b` (`R/ds.mdPattern.R` + test); not yet run against a backend.
+2. **`asListDS` in AggregateMethods** (review #1) — should be under AssignMethods only in `inst/DATASHIELD`. Fix is in dsBase stash `fbea2aee` (duplicate `57393bf1`).
+3. **`corDS`/`covDS` factor guard** (review #5) — v7.0-dev permits only numeric/integer/matrix/data.frame; 6.3.5 accepted factor `x` (and `y`), correlating on level codes. **Decision needed:** any factor, two-level only, or keep rejecting. Code + server tests in the same dsBase stash. Restore client test "cor accepts a factor variable" and add one for `ds.cov`.
+4. **`test-smk-asLogicalDS.R`** (dsBase) — no wrong-type test, although `asLogicalDS` runs `.checkClass`.
+
+**PR B1 — Client helpers** (dsBaseClient; see `DSBASECLIENT_DEDUP_PLAN.md`)
+1. Rename helpers to camelCase in one commit first (`.set_newobj_name`→`.resolveNewobjName`, `.set_datasources`→`.resolveDatasources`, etc.; review #37).
+2. `newobj` sweep — replace the ~46 inline `is.null(newobj)` defaults with `.resolveNewobjName()`. See "Follow-up: settle the `newobj`…".
+3. `.checkNameProvided(x, noun)` for the ~35 "Please provide the name of…" variants; `.check_df_name_provided` becomes a wrapper; fix its `call.=FALSE` → `call = NULL`.
+4. Adopt `.set_datasources()` in `ds.dmtC2S`, `ds.glmPredict`, `ds.glmSummary`; glm formula/family check in `glmChecks.R`.
+5. `tests/testthat/test-utils.R` unit-tests each helper.
+
+**PR B2 — cli conversion** (dsBaseClient; see `CLI_ERRORS_GUIDE.md`)
+1. Remaining one-off `stop()` → `cli_abort()` (208 `stop(` in `R/` on 2026-10-23).
+2. Loosen `fixed=TRUE` message assertions in touched tests to distinctive substrings.
+
+**Deferred past v7**
+- **Batch 1 `classConsistencyCheck`** — blocked: all except `ds.asList` are assign functions, so the server cannot return `class`; would need a pre-call `checkClass()` (extra round trip). See Batch 1 TODO.
+- **`*.transmit` / `eval(parse())` pass** — 15 server files deserialise via `strsplit` + `eval(parse())` (e.g. `matrixDS`, `matrixDiagDS`, `repDS`, `dmtC2SDS`, `dataFrameSubsetDS1/2`). See "Follow-up: replace clientside `*.transmit`…".
+
+Stash SHAs are stable; `stash@{n}` indices shift — apply by SHA.
 
 ## Per-Batch Workflow
 
@@ -460,17 +481,21 @@ Do this as one consistent pass across every function using the idiom (the same p
 appears in not-yet-refactored functions, e.g. `ds.rep`/`ds.seq` and the random-generation
 batch), rather than piecemeal within a batch.
 
-## Follow-up: refactor client-side `checkClass`
+## Decision: keep client-side `checkClass` and `isDefined`
 
-The client-side helper `checkClass()` currently does two jobs in one: (a) fetches the class of a server-side object and (b) checks the class is consistent across studies. After this refactor, the first job is redundant (the server returns `class` in aggregate results), but the second is still needed by composite dispatchers (`ds.summary` and similar).
+`checkClass()` stays. Assign functions (`ds.c`, `ds.cbind`, `ds.dataFrame`, `ds.list`, `ds.rbind`) get nothing back from `datashield.assign`, so a pre-call `classDS` lookup is the only way to check class consistency across studies; `ds.summary` needs it for dispatch and `glmChecks` for offset/weights. `isDefined()` stays because `glmDS1` and siblings do not validate formula terms server-side — removing it would degrade a missing-variable error to R's generic "object not found". Rename/split/merge with `.checkClassConsistency()` judged marginal and not planned.
 
-Planned cleanup (defer to a dedicated branch):
+## 7.0.0 deprecation (done, branch `refactor/deprecate-functions` in both repos)
 
-- Rename `checkClass` → `.checkClass` to mark it internal (matches `.checkClassConsistency`, `.set_datasources`).
-- Split its responsibilities: one helper that fetches class for pre-call routing, one that checks cross-study consistency on a set of classes.
-- Update the remaining callers (`ds.summary` and any others still holding a client-side class pre-fetch).
+**Client, defunct via `lifecycle::deprecate_stop("7.0.0", ...)`** (badge, `@keywords internal`, `...` signature so old calls reach the message): ds.listOpals, ds.setDefaultOpals, ds.listServersideFunctions, ds.meanByClass, ds.recodeLevels, ds.subset, ds.subsetByClass, ds.table1D, ds.table2D, ds.vectorCalc, ds.look, ds.message, ds.testObjExists, ds.dataFrameFill (→ `ds.standardiseDf`, from 6.4). `ds.ranksSecure` was already removed. `@import DSI` stays in the `ds.listServersideFunctions` stub (moving it changes NAMESPACE).
 
-Not done as part of any single batch because the rename touches callers outside that batch's function set and would break functions not yet refactored. Schedule once all batches are merged — the rename then becomes one small, isolated commit.
+**Client helpers deleted:** meanByClassHelper0a/0b/1–4, subsetHelper, isAssigned, ds.extractQuantiles, colPercent, rowPercent, R/secure.global.ranking.md.
+
+**Server functions removed:** recodeLevelsDS, subsetDS, subsetByClassDS (+ helpers 1–3), table2DDS, messageDS, testObjExistsDS, dataFrameFillDS, ranksSecureDS1–5, blackBoxDS, blackBoxRanksDS, minMaxRandDS, extractQuantilesDS1–2.
+
+**Server functions kept despite the wiki list:** `table1DDS` (used by `ds.summary` for factor counts), `checkNegValueDS` (used by `glmChecks` for negative weights), `vectorDS` (`inst/DATASHIELD` maps the server's `c` to it, so every vector argument in a client call goes through it).
+
+**Live-code changes:** `ds.lexis` no longer returns Note3/Note4 (pointed at `ds.message`); `ds.changeRefGroup` examples/test use `ds.recodeValues`; `asFactor`/`asFactorSimple` tests use `ds.table`; `ds.make` and `ds.meanSdGp` docs no longer reference defunct functions.
 
 ## Follow-up: settle the `newobj` default-and-validate helper
 

@@ -137,6 +137,7 @@ tarballs (`dsBase_7.0.0*.tar.gz`) — do that once, in whichever PR merges last;
 9. Re-measure perf on CI for every changed call.
 
 ## Still to do after the fixes PRs (2026-10-13)
+**Superseded: the live list is "Open items" in `REFACTOR_GUIDE.md`.** Kept below for history.
 dsBase `refactor/fixes` merged into `v7.0-dev` as #515 (`7cfab531`) and the branch was deleted.
 Three planned changes were stashed, never pushed, and are NOT in `v7.0-dev`:
 - #5 corDS/covDS accept factor x and y (+ a test in each server test file). In dsBase
