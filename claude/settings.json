@@ -105,8 +105,12 @@
       "~/git-repos"
     ]
   },
-  "model": "opus[1m]",
-  "outputStyle": "Concise",
+  "model": "opus",
+  "attribution": {
+    "commit": "",
+    "pr": "",
+    "sessionUrl": false
+  },
   "hooks": {
     "PreToolUse": [
       {
@@ -114,11 +118,11 @@
         "hooks": [
           {
             "type": "command",
-            "command": "jq -r '.tool_input.command // \"\"' | grep -Eq '(^|[^[:alnum:]_])git[[:space:]]+([^[:space:]]+[[:space:]]+)*(commit|push|revert)([[:space:]]|$)' && jq -n '{hookSpecificOutput:{hookEventName:\"PreToolUse\",permissionDecision:\"deny\",permissionDecisionReason:\"Blocked by local hook: git commit/push/revert is prohibited here. Ask the user to run it themselves.\"}}' || true"
+            "command": "bash \"$HOME/dotfiles/claude/hooks/block-git-write.sh\""
           },
           {
             "type": "command",
-            "command": "jq -e 'select(.tool_input.dangerouslyDisableSandbox == true) | select(((.tool_input.command // \"\") | test(\"gradlew|start_servers|run_benchmark|ds_unsandboxed\")) | not)' >/dev/null 2>&1 && jq -n '{hookSpecificOutput:{hookEventName:\"PreToolUse\",permissionDecision:\"deny\",permissionDecisionReason:\"Unsandboxed Bash is restricted to the Armadillo launch (gradlew/start_servers). Run other commands sandboxed.\"}}' || true"
+            "command": "bash \"$HOME/dotfiles/claude/hooks/limit-unsandboxed.sh\""
           }
         ]
       },
@@ -127,7 +131,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "jq -e 'select(.tool_input.file_path // \"\" | test(\"/[.]claude/(CLAUDE[.]md|settings([.]local)?[.]json)$\"))' >/dev/null 2>&1 && jq -n '{hookSpecificOutput:{hookEventName:\"PreToolUse\",permissionDecision:\"deny\",permissionDecisionReason:\"~/.claude/* are symlinks to the dotfiles repo. Edit the source at ~/dotfiles/claude/ instead (e.g. ~/dotfiles/claude/CLAUDE.md or ~/dotfiles/claude/settings.json).\"}}' || true"
+            "command": "bash \"$HOME/dotfiles/claude/hooks/protect-claude-symlinks.sh\""
           }
         ]
       }
@@ -137,12 +141,13 @@
         "hooks": [
           {
             "type": "command",
-            "command": "{ echo \"== STARTUP BRIEFING (auto-injected by SessionStart hook) ==\"; echo; echo \"These files are NOT auto-loaded. When work touches a repo or topic below, READ the relevant file before acting — do not wait to be pointed to it.\"; echo; echo \"CLAUDE.md files (read when working in that repo):\"; find ~/git-repos -maxdepth 4 -iname 'CLAUDE.md' -not -path '*/node_modules/*' 2>/dev/null | sort | while read -r f; do d=$(grep -m10 -E '^(#{1,6}[[:space:]]|#[[:space:]])' \"$f\" 2>/dev/null | sed -E 's/^#+[[:space:]]*//' | grep -m1 -E '[[:alpha:]]'); echo \"- $f\"; [ -n \"$d\" ] && echo \"    $d\"; done; echo; echo \"Notes (~/dotfiles/claude/notes/ — operational setup, sandbox exceptions, guides):\"; find ~/dotfiles/claude/notes -type f \\( -name '*.md' -o -name '*.R' -o -name '*.sh' \\) 2>/dev/null | sort | while read -r f; do d=$(grep -m10 -E '^(#{1,6}[[:space:]]|#[[:space:]])' \"$f\" 2>/dev/null | sed -E 's/^#+[[:space:]]*//' | grep -m1 -E '[[:alpha:]]'); echo \"- $f\"; [ -n \"$d\" ] && echo \"    $d\"; done; } | jq -Rs '{hookSpecificOutput:{hookEventName:\"SessionStart\",additionalContext:.}}'"
+            "command": "bash \"$HOME/dotfiles/claude/hooks/session-briefing.sh\""
           }
         ]
       }
     ]
   },
+  "outputStyle": "Concise",
   "sandbox": {
     "enabled": true,
     "failIfUnavailable": true,
@@ -207,7 +212,9 @@
     },
     "excludedCommands": [
       "ps",
-      "pgrep"
+      "ps *",
+      "pgrep",
+      "pgrep *"
     ]
   },
   "tui": "fullscreen",
