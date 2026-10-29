@@ -53,6 +53,30 @@ the paragraph that answers it. A criterion with no paragraph is a gap; report it
 - For a resubmission, build a table: critique, response, where the text changed.
 - Run the `unslop` skill over the prose. Funding panels read AI tells as low effort.
 - British English, unless the funder requires otherwise.
+- Work in two phases: first list every issue (read-only), then work through them one at a time
+  with the user. Number them, give the location (section + opening words of the sentence) and
+  the proposed replacement text, and wait for a decision before moving on.
+- Only flag what matters: factual or citation errors, contradictions between sections, form
+  questions left unanswered, and claims a reviewer could challenge. Do not flag wording
+  preferences or tiny style points; it is fine for a review to find nothing.
+- Order: substance first (cross-section consistency, missing content, task/milestone timing,
+  claims not backed by the work plan), then typos and style, then word limits last — the text
+  is still moving until then.
+- Keep a tracker file of issues with status (done / skipped / waiting on whom), and update it
+  after each decision.
+- Cross-checks that catch most errors: milestone/deliverable counts vs lists; months in tables
+  vs text vs Gantt; budget shares vs WP amounts; every in-text citation in the reference list
+  and vice versa; partner roles in WPs vs expertise section vs budget.
+- References: take details from the project's .bib or a verified source; mark anything
+  unconfirmed and never fill gaps from memory.
+- When cutting for word limits, check each cut against the reviewer feedback and the
+  evaluation criteria first. Never cut text that answers a reviewer comment or signals a
+  criterion (state of the art, novelty, impact), even if it repeats another section.
+- When rewriting or restructuring a section, report the before/after word count and list every
+  removal (figures, citations, phrases), not only the deliberate cuts. Never describe a rewrite
+  as "no content cut" without checking it against the word-count change.
+- Don't cut text a partner wrote (e.g. their route to market) until they have replied; trim it
+  later if their additions push the section over the limit.
 
 ## Output
 
