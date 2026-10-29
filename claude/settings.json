@@ -1,4 +1,9 @@
 {
+  "attribution": {
+    "commit": "",
+    "pr": "",
+    "sessionUrl": false
+  },
   "permissions": {
     "allow": [
       "Read(~/git-repos/**)",
@@ -57,7 +62,6 @@
       "Bash(gh repo delete:*)",
       "Bash(gh secret set:*)",
       "Bash(gh secret delete:*)",
-      "Bash(git commit:*)",
       "Bash(git push:*)",
       "Bash(git revert:*)",
       "Bash(git push --force:*)",
@@ -98,7 +102,8 @@
       "Bash(gh issue edit:*)",
       "Bash(gh issue comment:*)",
       "Bash(gh run rerun:*)",
-      "Bash(gh workflow run:*)"
+      "Bash(gh workflow run:*)",
+      "Bash(git commit:*)"
     ],
     "defaultMode": "auto",
     "additionalDirectories": [
@@ -106,11 +111,6 @@
     ]
   },
   "model": "opus",
-  "attribution": {
-    "commit": "",
-    "pr": "",
-    "sessionUrl": false
-  },
   "hooks": {
     "PreToolUse": [
       {
@@ -146,6 +146,14 @@
         ]
       }
     ]
+  },
+  "extraKnownMarketplaces": {
+    "datashield-skills": {
+      "source": {
+        "source": "directory",
+        "path": "/Users/tcadman/git-repos/ds-molgenis/datashield-skills"
+      }
+    }
   },
   "outputStyle": "Concise",
   "sandbox": {
@@ -247,5 +255,8 @@
       "**Org-specific CLIs**: None configured",
       "routine under `timcadman/` and `StuartWheater/` GitHub prefixes (user's own fork namespaces) may be treated as low-risk push/PR destinations for this repo's own work"
     ]
+  },
+  "enabledPlugins": {
+    "datashield@datashield-skills": true
   }
 }

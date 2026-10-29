@@ -6,7 +6,9 @@ failures=0
 expect() {
   local want="$1" hook="$2" input="$3" out got
   out=$(printf '%s' "$input" | bash "$dir/$hook")
-  if printf '%s' "$out" | grep -q '"deny"'; then got=deny; else got=allow; fi
+  if printf '%s' "$out" | grep -q '"deny"'; then got=deny
+  elif printf '%s' "$out" | grep -q '"ask"'; then got=ask
+  else got=allow; fi
   if [ "$got" != "$want" ]; then
     echo "FAIL $hook: want $want, got $got: $input"
     failures=$((failures + 1))
@@ -17,9 +19,9 @@ bash_input() {
   jq -nc --arg c "$1" --argjson u "${2:-false}" '{tool_input:{command:$c,dangerouslyDisableSandbox:$u}}'
 }
 
-expect deny  block-git-write.sh "$(bash_input 'git commit -m x')"
+expect ask   block-git-write.sh "$(bash_input 'git commit -m x')"
 expect deny  block-git-write.sh "$(bash_input 'git -C /some/repo push origin main')"
-expect deny  block-git-write.sh "$(bash_input 'git status && git commit -am x')"
+expect ask   block-git-write.sh "$(bash_input 'git status && git commit -am x')"
 expect deny  block-git-write.sh "$(bash_input 'GIT_EDITOR=true git revert HEAD')"
 expect allow block-git-write.sh "$(bash_input 'git log --grep commit')"
 expect allow block-git-write.sh "$(bash_input 'echo "do not git push"')"
