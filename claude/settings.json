@@ -83,7 +83,8 @@
       "Read(~/.ssh/**)",
       "Read(~/.aws/**)",
       "Read(~/Downloads/historiaclnicadatososibilbaobasurto/**)",
-      "Read(~/data/teleconsultas/real/**)"
+      "Read(~/data/teleconsultas/real/**)",
+      "mcp__claude-in-chrome"
     ],
     "ask": [
       "Bash(npm publish:*)",
@@ -223,7 +224,8 @@
       "ps *",
       "pgrep",
       "pgrep *"
-    ]
+    ],
+    "enableWeakerNetworkIsolation": true
   },
   "tui": "fullscreen",
   "skipWorkflowUsageWarning": true,
@@ -258,5 +260,10 @@
   },
   "enabledPlugins": {
     "datashield@datashield-skills": true
+  },
+  "env": {
+    "GIT_CONFIG_COUNT": "1",
+    "GIT_CONFIG_KEY_0": "url.https://github.com/.insteadOf",
+    "GIT_CONFIG_VALUE_0": "git@github.com:"
   }
 }
