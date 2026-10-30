@@ -212,7 +212,8 @@
         "~/.Renviron",
         "~/.netrc",
         "~/Downloads/historiaclnicadatososibilbaobasurto",
-        "~/data/teleconsultas/real"
+        "~/data/teleconsultas/real",
+        "~/.config/gh"
       ],
       "allowRead": [
         "~/git-repos/molgenis/molgenis-service-armadillo/scripts/benchmark/.env",
@@ -224,8 +225,7 @@
       "ps *",
       "pgrep",
       "pgrep *"
-    ],
-    "enableWeakerNetworkIsolation": true
+    ]
   },
   "tui": "fullscreen",
   "skipWorkflowUsageWarning": true,
